@@ -164,6 +164,36 @@ class SnippetsService {
     }
   }
 
+  async getAllTagsFromSnippets(): Promise<Array<{ tag: string; count: number }>> {
+    if (this.isLocalModeActive) {
+      const snippets = localStorageService.getSnippets();
+      const tagCounts = new Map<string, number>();
+      
+      snippets.forEach(snippet => {
+        snippet.tags?.forEach(tag => {
+          tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
+        });
+      });
+
+      return Array.from(tagCounts.entries())
+        .map(([tag, count]) => ({ tag, count }))
+        .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag));
+    } else {
+      const snippets = await this.getSnippets();
+      const tagCounts = new Map<string, number>();
+      
+      snippets.forEach(snippet => {
+        snippet.tags?.forEach(tag => {
+          tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
+        });
+      });
+
+      return Array.from(tagCounts.entries())
+        .map(([tag, count]) => ({ tag, count }))
+        .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag));
+    }
+  }
+
   async getSnippetsByTag(tag: string): Promise<UnifiedSnippet[]> {
     if (this.isLocalModeActive) {
       return localStorageService.getSnippetsByTag(tag);
@@ -219,6 +249,7 @@ export const updateSnippet = (id: string, updates: Parameters<typeof snippetsSer
 export const deleteSnippet = (id: string) => snippetsService.deleteSnippet(id);
 export const searchSnippets = (query: string) => snippetsService.searchSnippets(query);
 export const getAllTags = () => snippetsService.getAllTags();
+export const getAllTagsFromSnippets = () => snippetsService.getAllTagsFromSnippets();
 export const getSnippetsByTag = (tag: string) => snippetsService.getSnippetsByTag(tag);
 
 // Export the service instance for advanced usage

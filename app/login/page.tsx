@@ -7,7 +7,6 @@ import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Github } from "lucide-react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -16,7 +15,7 @@ export default function LoginPage() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const { signIn, signUp, signInWithGitHub, signInDemo, isLocalMode } = useAuth();
+  const { signIn, signUp, signInDemo, isLocalMode } = useAuth();
   const router = useRouter();
 
   const handleEmailAuth = async (e: React.FormEvent) => {
@@ -40,17 +39,6 @@ export default function LoginPage() {
       setError(err instanceof Error ? err.message : "An error occurred");
     }
     setLoading(false);
-  };
-
-  const handleGitHubAuth = async () => {
-    setLoading(true);
-    setError("");
-    try {
-      await signInWithGitHub();
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "An error occurred");
-      setLoading(false);
-    }
   };
 
   const handleDemoLogin = async () => {
@@ -99,25 +87,13 @@ export default function LoginPage() {
             </Button>
           )}
 
-          {!isLocalMode && (
-            <Button
-              onClick={handleGitHubAuth}
-              disabled={loading}
-              variant="outline"
-              className="w-full"
-            >
-              <Github className="h-4 w-4 mr-2" />
-              Continue with GitHub
-            </Button>
-          )}
-
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
               <span className="bg-background px-2 text-muted-foreground">
-                {isLocalMode ? "Or create account" : "Or continue with email"}
+                {isLocalMode ? "Or create account" : "Continue with email"}
               </span>
             </div>
           </div>

@@ -13,7 +13,6 @@ interface AuthContextType {
   isLocalMode: boolean;
   signUp: (email: string, password: string, name?: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
-  signInWithGitHub: () => Promise<void>;
   signInDemo: () => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -88,20 +87,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signInWithGitHub = async () => {
-    if (isLocalMode) {
-      throw new Error("GitHub authentication is not available in local mode");
-    } else {
-      const supabase = createSupabaseClient();
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "github",
-        options: {
-          redirectTo: `${window.location.origin}/dashboard`,
-        },
-      });
-      if (error) throw error;
-    }
-  };
+  
 
   const signInDemo = async () => {
     if (isLocalMode) {
@@ -130,7 +116,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isLocalMode,
     signUp,
     signIn,
-    signInWithGitHub,
     signInDemo,
     signOut,
   };

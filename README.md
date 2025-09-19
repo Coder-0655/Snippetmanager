@@ -6,7 +6,7 @@ A modern, full-featured code snippet manager built with Next.js 14, TypeScript, 
 
 - **Dual Mode Operation**: Works with or without Supabase backend
 - **Full CRUD Operations**: Create, read, update, and delete code snippets
-- **Authentication**: GitHub OAuth and email/password (Supabase mode) or local authentication
+- **Authentication**: Email/password (Supabase mode) or local authentication
 - **Real-time Search**: Search across snippet titles, content, and tags
 - **Tag Management**: Organize snippets with custom tags
 - **Copy to Clipboard**: One-click copying of code snippets
@@ -19,10 +19,6 @@ A modern, full-featured code snippet manager built with Next.js 14, TypeScript, 
 ### Option 1: Local Mode (No Setup Required)
 
 ```bash
-# Clone the repository
-git clone <repository-url>
-cd Snipetmanager
-
 # Install dependencies
 npm install
 

@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Code2, Search, Share2 } from "lucide-react";
 import SnippetPreview from "@/components/snippet-preview";
+import { ModernCard } from "@/components/ui/modern-card";
+import { ModernButton } from "@/components/ui/modern-button";
 
 export default function HomePage() {
   return (
@@ -13,20 +15,23 @@ export default function HomePage() {
           Save, search, and share your code snippets in seconds
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <Link
-            href="/login"
-            className="w-full sm:w-auto inline-flex h-10 items-center justify-center rounded-md bg-primary px-6 text-sm font-medium text-primary-foreground shadow hover:opacity-90"
-          >
-            Get Started
+          <Link href="/login">
+            <ModernButton 
+              animate
+              className="w-full sm:w-auto px-6 text-sm font-medium shadow hover:opacity-90"
+            >
+              Get Started
+            </ModernButton>
           </Link>
-          <a
-            href="https://github.com/"
-            target="_blank"
-            rel="noreferrer"
-            className="w-full sm:w-auto inline-flex h-10 items-center justify-center rounded-md border border-border bg-secondary px-6 text-sm font-medium hover:bg-muted"
-          >
-            GitHub Repo
-          </a>
+          <Link href="/dashboard">
+            <ModernButton 
+              animate
+              variant="secondary"
+              className="w-full sm:w-auto px-6 text-sm font-medium"
+            >
+              View Dashboard
+            </ModernButton>
+          </Link>
         </div>
       </section>
 
@@ -85,12 +90,12 @@ function FeatureCard({
   desc: string;
 }) {
   return (
-    <div className="rounded-lg border border-border bg-card p-6">
+    <ModernCard variant="elevated" animate className="hover:shadow-xl transition-shadow">
       <div className="flex items-center gap-2 text-primary">
         {icon}
         <h3 className="font-medium">{title}</h3>
       </div>
       <p className="mt-2 text-sm text-muted-foreground">{desc}</p>
-    </div>
+    </ModernCard>
   );
 }

@@ -32,29 +32,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     <Link className="hover:text-foreground" href="/login">
                       Login
                     </Link>
-                    <a
-                      className="hover:text-foreground"
-                      href="https://github.com/"
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      GitHub
-                    </a>
                   </nav>
                 </div>
               </header>
               <main className="flex-1">{children}</main>
               <footer className="border-t border-border">
-                <div className="container flex h-16 items-center justify-between text-sm text-muted-foreground">
-                  <span>MIT License</span>
-                  <div className="flex items-center gap-4">
-                    <a href="https://github.com/" target="_blank" rel="noreferrer">
-                      GitHub
-                    </a>
-                    <a href="https://twitter.com/" target="_blank" rel="noreferrer">
-                      Twitter
-                    </a>
-                  </div>
+                <div className="container flex h-16 items-center justify-center text-sm text-muted-foreground">
+                  <span>© 2025 Snippet Manager. All rights reserved.</span>
                 </div>
               </footer>
             </div>

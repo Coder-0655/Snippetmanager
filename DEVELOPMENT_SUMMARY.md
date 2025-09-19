@@ -8,16 +8,16 @@ Your Next.js Snippet Manager application is now fully functional with all reques
 
 ### Core Functionality
 - **Full CRUD Operations**: Create, read, update, and delete code snippets
-- **Authentication**: GitHub OAuth and email/password authentication via Supabase
+- **Authentication**: Email/password authentication via Supabase or local mode
 - **Real-time Search**: Search across snippet titles, content, and tags
 - **Tag Management**: Create, filter, and organize snippets by tags
 - **Copy to Clipboard**: One-click copying of code snippets
 
 ### Technical Stack
 - **Framework**: Next.js 14 with App Router and TypeScript
-- **Database**: Supabase PostgreSQL with Row Level Security
+- **Database**: Supabase PostgreSQL with Row Level Security or local storage
 - **UI**: TailwindCSS + shadcn/ui components
-- **Authentication**: Supabase Auth with GitHub integration
+- **Authentication**: Supabase Auth or local authentication
 - **Code Quality**: ESLint + Prettier with strict rules
 
 ### User Experience

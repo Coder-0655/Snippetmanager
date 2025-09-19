@@ -10,6 +10,7 @@ import {
   SignedOut,
   UserButton,
 } from '@clerk/nextjs';
+import { UserSyncProvider } from "@/components/user-sync-provider";
 import Link from "next/link";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -26,39 +27,41 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <html lang="en" suppressHydrationWarning>
         <body className={inter.className}>
           <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-            <div className="min-h-dvh flex flex-col">
-              <header className="border-b border-border">
-                <div className="container flex h-14 items-center justify-between">
-                  <Link href="/" className="font-semibold tracking-tight">
-                    Snippet Manager
-                  </Link>
-                  <nav className="flex items-center gap-3 text-sm text-muted-foreground">
-                    <Link className="hover:text-foreground" href="/dashboard">
-                      Dashboard
+            <UserSyncProvider>
+              <div className="min-h-dvh flex flex-col">
+                <header className="border-b border-border">
+                  <div className="container flex h-14 items-center justify-between">
+                    <Link href="/" className="font-semibold tracking-tight">
+                      Snippet Manager
                     </Link>
-                    <SignedOut>
-                      <SignInButton>
-                        <button className="hover:text-foreground">Sign In</button>
-                      </SignInButton>
-                      <SignUpButton>
-                        <button className="bg-primary text-primary-foreground rounded-lg font-medium text-sm h-9 px-4 hover:bg-primary/90">
-                          Sign Up
-                        </button>
-                      </SignUpButton>
-                    </SignedOut>
-                    <SignedIn>
-                      <UserButton />
-                    </SignedIn>
-                  </nav>
-                </div>
-              </header>
-              <main className="flex-1">{children}</main>
-              <footer className="border-t border-border">
-                <div className="container flex h-16 items-center justify-center text-sm text-muted-foreground">
-                  <span>© 2025 Snippet Manager. All rights reserved.</span>
-                </div>
-              </footer>
-            </div>
+                    <nav className="flex items-center gap-3 text-sm text-muted-foreground">
+                      <SignedIn>
+                        <Link className="hover:text-foreground" href="/dashboard">
+                          Dashboard
+                        </Link>
+                        <UserButton />
+                      </SignedIn>
+                      <SignedOut>
+                        <SignInButton>
+                          <button className="hover:text-foreground">Sign In</button>
+                        </SignInButton>
+                        <SignUpButton>
+                          <button className="bg-primary text-primary-foreground rounded-lg font-medium text-sm h-9 px-4 hover:bg-primary/90">
+                            Sign Up
+                          </button>
+                        </SignUpButton>
+                      </SignedOut>
+                    </nav>
+                  </div>
+                </header>
+                <main className="flex-1">{children}</main>
+                <footer className="border-t border-border">
+                  <div className="container flex h-16 items-center justify-center text-sm text-muted-foreground">
+                    <span>© 2025 Snippet Manager. All rights reserved.</span>
+                  </div>
+                </footer>
+              </div>
+            </UserSyncProvider>
           </ThemeProvider>
         </body>
       </html>

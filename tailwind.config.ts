@@ -7,62 +7,34 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "hsl(222 22% 8%)", // Rich dark navy
-        foreground: "hsl(213 18% 96%)", // Soft white
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
         muted: {
-          DEFAULT: "hsl(222 15% 11%)",
-          foreground: "hsl(215 16% 68%)",
+          DEFAULT: "hsl(var(--muted))",
+          foreground: "hsl(var(--muted-foreground))",
         },
         card: {
-          DEFAULT: "hsl(222 18% 9%)",
-          foreground: "hsl(213 18% 96%)",
+          DEFAULT: "hsl(var(--card))",
+          foreground: "hsl(var(--card-foreground))",
         },
-        border: "hsl(221 39% 18%)", // Subtle indigo border
-        input: "hsl(222 15% 14%)",
-        ring: "hsl(221 83% 53%)", // Professional indigo focus
+        border: "hsl(var(--border))",
+        input: "hsl(var(--input))",
+        ring: "hsl(var(--ring))",
         primary: {
-          DEFAULT: "hsl(221 83% 53%)", // Professional indigo
-          foreground: "white",
-          50: "hsl(224 76% 97%)",
-          100: "hsl(225 71% 93%)",
-          200: "hsl(224 64% 87%)",
-          300: "hsl(224 62% 78%)",
-          400: "hsl(224 56% 67%)",
-          500: "hsl(221 83% 53%)",
-          600: "hsl(221 100% 44%)",
-          700: "hsl(222 100% 39%)",
-          800: "hsl(223 88% 34%)",
-          900: "hsl(224 88% 28%)",
+          DEFAULT: "hsl(var(--primary))",
+          foreground: "hsl(var(--primary-foreground))",
         },
         secondary: {
-          DEFAULT: "hsl(215 25% 27%)", // Slate secondary
-          foreground: "hsl(213 18% 96%)",
-          50: "hsl(210 40% 98%)",
-          100: "hsl(210 40% 96%)",
-          200: "hsl(214 32% 91%)",
-          300: "hsl(213 27% 84%)",
-          400: "hsl(215 20% 65%)",
-          500: "hsl(215 16% 47%)",
-          600: "hsl(215 19% 35%)",
-          700: "hsl(215 25% 27%)",
-          800: "hsl(217 33% 17%)",
-          900: "hsl(222 84% 5%)",
+          DEFAULT: "hsl(var(--secondary))",
+          foreground: "hsl(var(--secondary-foreground))",
         },
         accent: {
-          DEFAULT: "hsl(264 83% 70%)", // Unique purple accent
-          foreground: "white",
+          DEFAULT: "hsl(var(--accent))",
+          foreground: "hsl(var(--accent-foreground))",
         },
         destructive: {
-          DEFAULT: "hsl(0 84% 60%)",
-          foreground: "white",
-        },
-        success: {
-          DEFAULT: "hsl(142 76% 36%)",
-          foreground: "white",
-        },
-        warning: {
-          DEFAULT: "hsl(38 92% 50%)",
-          foreground: "hsl(222 22% 8%)",
+          DEFAULT: "hsl(var(--destructive))",
+          foreground: "hsl(var(--destructive-foreground))",
         },
       },
       fontFamily: {

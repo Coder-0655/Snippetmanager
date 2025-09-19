@@ -184,7 +184,6 @@ export class CodeValidator {
     const errors: ValidationResult["errors"] = [];
     const suggestions: string[] = [];
 
-    let indentLevel = 0;
     const indentStack: number[] = [0];
 
     lines.forEach((line, index) => {

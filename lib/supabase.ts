@@ -57,6 +57,35 @@ export type Database = {
           created_at?: string;
         };
       };
+      projects: {
+        Row: {
+          id: string;
+          user_id: string;
+          name: string;
+          description: string | null;
+          color: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          name: string;
+          description?: string | null;
+          color: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          name?: string;
+          description?: string | null;
+          color?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
       snippets: {
         Row: {
           id: string;
@@ -65,6 +94,7 @@ export type Database = {
           code: string;
           language: string;
           tags: string[];
+          project_id: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -75,6 +105,7 @@ export type Database = {
           code: string;
           language: string;
           tags?: string[];
+          project_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -85,6 +116,7 @@ export type Database = {
           code?: string;
           language?: string;
           tags?: string[];
+          project_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };

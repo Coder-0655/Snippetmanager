@@ -7,6 +7,7 @@ export interface LocalSnippet {
   language: string;
   tags: string[];
   description?: string;
+  project_id: string | null;
   created_at: string;
   updated_at: string;
   user_id: string;
@@ -52,6 +53,7 @@ class LocalStorageService {
     const newSnippet: LocalSnippet = {
       ...snippet,
       id: crypto.randomUUID(),
+      project_id: snippet.project_id || null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };

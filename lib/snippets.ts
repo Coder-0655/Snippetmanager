@@ -5,21 +5,42 @@ import { localStorageService, type LocalSnippet } from "./local-storage";
 import { getCurrentUserId } from "./clerk-auth";
 import type { Snippet } from "./supabase";
 
+// Default tags that are created for every new user
+export const DEFAULT_TAGS = [
+  { name: "JavaScript", color: "bg-yellow-500" },
+  { name: "React", color: "bg-blue-500" },
+  { name: "TypeScript", color: "bg-blue-600" },
+  { name: "CSS", color: "bg-purple-500" },
+  { name: "HTML", color: "bg-orange-500" },
+  { name: "Node.js", color: "bg-green-500" },
+  { name: "Python", color: "bg-green-600" },
+  { name: "API", color: "bg-indigo-500" },
+  { name: "Utility", color: "bg-gray-500" },
+  { name: "Component", color: "bg-pink-500" },
+];
+
 // Type that works for both Supabase and local snippets
 export type UnifiedSnippet = Snippet | LocalSnippet;
 
 class SnippetsService {
   private isLocalModeActive = !isSupabaseConfigured();
 
-  async getSnippets(): Promise<UnifiedSnippet[]> {
+  async getSnippets(userId?: string): Promise<UnifiedSnippet[]> {
     if (this.isLocalModeActive) {
       return localStorageService.getSnippets();
     } else {
       const supabase = createSupabaseClient();
-      const { data, error } = await supabase
+      let query = supabase
         .from("snippets")
         .select("*")
         .order("created_at", { ascending: false });
+
+      // Filter by user if userId is provided
+      if (userId) {
+        query = query.eq("user_id", userId);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error("Error fetching snippets:", error);
@@ -36,6 +57,7 @@ class SnippetsService {
     language: string;
     tags: string[];
     description?: string;
+    project_id?: string | null;
   }, userId?: string): Promise<UnifiedSnippet> {
     if (this.isLocalModeActive) {
       const currentUserId = userId || getCurrentUserId();
@@ -49,12 +71,18 @@ class SnippetsService {
       });
     } else {
       const supabase = createSupabaseClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      
+      // Use provided userId or fallback to auth check
+      let userIdToUse = userId;
+      if (!userIdToUse) {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
 
-      if (!user) {
-        throw new Error("User not authenticated");
+        if (!user) {
+          throw new Error("User not authenticated");
+        }
+        userIdToUse = user.id;
       }
 
       const { data, error } = await supabase
@@ -62,7 +90,7 @@ class SnippetsService {
         .insert([
           {
             ...snippet,
-            user_id: user.id,
+            user_id: userIdToUse,
           },
         ])
         .select()
@@ -85,6 +113,7 @@ class SnippetsService {
       language?: string;
       tags?: string[];
       description?: string;
+      project_id?: string | null;
     },
   ): Promise<UnifiedSnippet> {
     if (this.isLocalModeActive) {
@@ -220,6 +249,34 @@ class SnippetsService {
   }
 
   // For local mode, export/import functionality
+  async initializeDefaultTags(userId: string): Promise<void> {
+    if (this.isLocalModeActive) {
+      // For local mode, store default tags in localStorage
+      const existingTags = localStorageService.getAllTags();
+      if (existingTags.length === 0) {
+        // Store default tags in localStorage
+        const defaultTagData = DEFAULT_TAGS.map(tag => ({
+          name: tag.name,
+          color: tag.color,
+          count: 0
+        }));
+        localStorage.setItem('user-default-tags', JSON.stringify(defaultTagData));
+      }
+    } else {
+      const supabase = createSupabaseClient();
+      
+      // Check if user already has tags
+      const { data: existingTags } = await supabase
+        .from("snippets")
+        .select("tags")
+        .eq("user_id", userId)
+        .limit(1);
+
+      // If user has no snippets yet, we'll create default tags when they create their first snippet
+      // For now, we'll store the default tags in a separate table or handle them client-side
+    }
+  }
+
   exportData() {
     if (this.isLocalModeActive) {
       return localStorageService.exportData();
@@ -241,7 +298,7 @@ class SnippetsService {
 const snippetsService = new SnippetsService();
 
 // Export functions for backward compatibility
-export const getSnippets = () => snippetsService.getSnippets();
+export const getSnippets = (userId?: string) => snippetsService.getSnippets(userId);
 export const createSnippet = (snippet: Parameters<typeof snippetsService.createSnippet>[0], userId?: string) => 
   snippetsService.createSnippet(snippet, userId);
 export const updateSnippet = (id: string, updates: Parameters<typeof snippetsService.updateSnippet>[1]) => 
@@ -251,6 +308,7 @@ export const searchSnippets = (query: string) => snippetsService.searchSnippets(
 export const getAllTags = () => snippetsService.getAllTags();
 export const getAllTagsFromSnippets = () => snippetsService.getAllTagsFromSnippets();
 export const getSnippetsByTag = (tag: string) => snippetsService.getSnippetsByTag(tag);
+export const initializeDefaultTags = (userId: string) => snippetsService.initializeDefaultTags(userId);
 
 // Export the service instance for advanced usage
 export default snippetsService;

@@ -20,15 +20,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CodeEditor, type CodeLanguage } from "@/components/code-editor";
-import { Plus, Upload, Settings, HelpCircle } from "lucide-react";
-import { getSnippets, createSnippet, updateSnippet, deleteSnippet } from "@/lib/snippets";
+import { MonacoEditor } from "@/components/monaco-editor";
+import { Plus, Upload, Settings, HelpCircle, Bot, FileText } from "lucide-react";
+import { getSnippets, createSnippet, updateSnippet, deleteSnippet, type UnifiedSnippet } from "@/lib/snippets";
 import type { Snippet } from "@/lib/supabase";
 import { AdvancedSearch, type SearchFilters } from "@/components/advanced-search";
-import { SnippetCard } from "@/components/snippet-card";
+import { EnhancedSnippetCard } from "@/components/enhanced-snippet-card";
+import { AICodeAssistant } from "@/components/ai-code-assistant";
+import { SmartTemplates } from "@/components/smart-templates";
 import { BulkOperations, SelectionCheckbox } from "@/components/bulk-operations";
 import { useKeyboardShortcuts, KeyboardShortcutsHelp } from "@/components/keyboard-shortcuts";
 import { SnippetExporter, SnippetImporter } from "@/lib/snippet-export";
-import { SmartCodeEditor } from "@/components/smart-code-editor";
 
 const LANGUAGES: { value: CodeLanguage; label: string }[] = [
   { value: "ts", label: "TypeScript" },
@@ -52,10 +54,15 @@ export default function MySnippetsPage() {
   const [code, setCode] = useState("");
   const [language, setLanguage] = useState<CodeLanguage>("ts");
   const [tags, setTags] = useState<string>("");
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [projectId, setProjectId] = useState<string>("none");
+  const [selectedSnippet, setSelectedSnippet] = useState<UnifiedSnippet | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [selectedSnippets, setSelectedSnippets] = useState<Set<string>>(new Set());
   const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [showAIAssistant, setShowAIAssistant] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
 
   // Advanced search filters
   const [filters, setFilters] = useState<SearchFilters>({
@@ -71,6 +78,13 @@ export default function MySnippetsPage() {
     const allTags = snippets.flatMap(snippet => snippet.tags);
     return [...new Set(allTags)].sort();
   }, [snippets]);
+
+  // Mock projects for now - replace with actual API call
+  const projects = [
+    { id: "1", name: "React Components", color: "bg-blue-500" },
+    { id: "2", name: "API Utilities", color: "bg-green-500" },
+    { id: "3", name: "CSS Animations", color: "bg-purple-500" },
+  ];
 
   // Filter and sort snippets based on search filters
   const filteredAndSortedSnippets = useMemo(() => {
@@ -187,7 +201,7 @@ export default function MySnippetsPage() {
 
   const loadSnippets = async () => {
     try {
-      const data = await getSnippets();
+      const data = await getSnippets(user?.id);
       setSnippets(data);
     } catch (error) {
       console.error("Failed to load snippets:", error);
@@ -239,6 +253,7 @@ export default function MySnippetsPage() {
           .split(",")
           .map((t) => t.trim())
           .filter(Boolean),
+        project_id: projectId === "none" ? null : projectId,
       };
 
       if (editingSnippet) {
@@ -264,6 +279,7 @@ export default function MySnippetsPage() {
     setCode(snippet.code);
     setLanguage(snippet.language as CodeLanguage);
     setTags(snippet.tags.join(", "));
+    setProjectId((snippet as any).project_id || "none");
     setOpen(true);
   };
 
@@ -293,6 +309,7 @@ export default function MySnippetsPage() {
     setCode("");
     setLanguage("ts");
     setTags("");
+    setProjectId("none");
   };
 
   // Bulk operations
@@ -480,14 +497,29 @@ export default function MySnippetsPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                <SmartCodeEditor
+                
+                <Select value={projectId} onValueChange={setProjectId}>
+                  <SelectTrigger className="focus-ring">
+                    <SelectValue placeholder="Select a project (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No Project</SelectItem>
+                    {projects.map((project) => (
+                      <SelectItem key={project.id} value={project.id}>
+                        <div className="flex items-center gap-2">
+                          <div className={`w-3 h-3 rounded-full ${project.color}`} />
+                          {project.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <MonacoEditor
                   value={code}
                   onChange={setCode}
                   language={language}
-                  placeholder="Enter your code here..."
-                  className="min-h-[300px]"
-                  enableValidation={true}
-                  enableFormatting={true}
+                  height="300px"
+                  onLanguageChange={(newLang) => setLanguage(newLang as CodeLanguage)}
                 />
                 <Input
                   placeholder="Tags (comma separated)"
@@ -506,7 +538,48 @@ export default function MySnippetsPage() {
                   <Button variant="outline" onClick={resetForm} className="flex-1">
                     Cancel
                   </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowAIAssistant(!showAIAssistant)}
+                    className="flex items-center gap-2"
+                  >
+                    <Bot className="h-4 w-4" />
+                    AI Assistant
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowTemplates(!showTemplates)}
+                    className="flex items-center gap-2"
+                  >
+                    <FileText className="h-4 w-4" />
+                    Templates
+                  </Button>
                 </div>
+                
+                {/* AI Assistant Panel */}
+                {showAIAssistant && (
+                  <div className="mt-4 border-t pt-4">
+                    <AICodeAssistant
+                      code={code}
+                      language={language}
+                      onCodeChange={setCode}
+                      onLanguageChange={(lang) => setLanguage(lang as CodeLanguage)}
+                    />
+                  </div>
+                )}
+
+                {/* Smart Templates Panel */}
+                {showTemplates && (
+                  <div className="mt-4 border-t pt-4">
+                    <SmartTemplates
+                      onUseTemplate={(templateCode, templateLanguage) => {
+                        setCode(templateCode);
+                        setLanguage(templateLanguage as CodeLanguage);
+                      }}
+                      currentLanguage={language}
+                    />
+                  </div>
+                )}
               </div>
             </DialogContent>
           </Dialog>
@@ -589,12 +662,15 @@ export default function MySnippetsPage() {
                   onToggle={() => toggleSelection(snippet.id)}
                 />
               </div>
-              <SnippetCard
+              <EnhancedSnippetCard
                 snippet={snippet}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
                 onToggleFavorite={toggleFavorite}
                 isFavorite={favorites.has(snippet.id)}
+                onUpdate={(updatedSnippet) => {
+                  setSnippets(prev => prev.map(s => s.id === updatedSnippet.id ? updatedSnippet : s));
+                }}
               />
             </div>
           ))}

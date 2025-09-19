@@ -1,5 +1,5 @@
--- Enable RLS (Row Level Security)
-alter table auth.users enable row level security;
+-- Supabase Schema for Snippet Manager
+-- Note: auth.users table is managed by Supabase and has RLS enabled by default
 
 -- Create users table (extends Supabase auth.users)
 create table public.profiles (

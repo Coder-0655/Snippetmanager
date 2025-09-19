@@ -2,8 +2,6 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -21,11 +19,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CodeEditor, type CodeLanguage } from "@/components/code-editor";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { Plus, Upload, Settings, HelpCircle } from "lucide-react";
 import { getSnippets, createSnippet, updateSnippet, deleteSnippet } from "@/lib/snippets";
 import type { Snippet } from "@/lib/supabase";
-import { CopyButton } from "@/components/copy-button";
-import { useSearch } from "@/lib/search-context";
+import { AdvancedSearch, type SearchFilters } from "@/components/advanced-search";
+import { SnippetCard } from "@/components/snippet-card";
+import { BulkOperations, SelectionCheckbox } from "@/components/bulk-operations";
+import { useKeyboardShortcuts, KeyboardShortcutsHelp } from "@/components/keyboard-shortcuts";
+import { SnippetExporter, SnippetImporter } from "@/lib/snippet-export";
+import { SmartCodeEditor } from "@/components/smart-code-editor";
 
 const LANGUAGES: { value: CodeLanguage; label: string }[] = [
   { value: "ts", label: "TypeScript" },
@@ -49,22 +51,136 @@ export default function MySnippetsPage() {
   const [language, setLanguage] = useState<CodeLanguage>("ts");
   const [tags, setTags] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
-  const { searchQuery } = useSearch();
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [selectedSnippets, setSelectedSnippets] = useState<Set<string>>(new Set());
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
 
-  // Filter snippets based on search query
-  const filteredSnippets = useMemo(() => {
-    if (!searchQuery.trim()) return snippets;
+  // Advanced search filters
+  const [filters, setFilters] = useState<SearchFilters>({
+    query: "",
+    languages: [],
+    tags: [],
+    sortBy: "created_at",
+    sortOrder: "desc",
+  });
 
-    return snippets.filter(
-      (snippet) =>
-        snippet.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        snippet.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        snippet.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase())),
-    );
-  }, [snippets, searchQuery]);
+  // Get available tags from all snippets
+  const availableTags = useMemo(() => {
+    const allTags = snippets.flatMap(snippet => snippet.tags);
+    return [...new Set(allTags)].sort();
+  }, [snippets]);
+
+  // Filter and sort snippets based on search filters
+  const filteredAndSortedSnippets = useMemo(() => {
+    let filtered = snippets;
+
+    // Apply text search
+    if (filters.query.trim()) {
+      const query = filters.query.toLowerCase();
+      filtered = filtered.filter(
+        (snippet) =>
+          snippet.title.toLowerCase().includes(query) ||
+          snippet.code.toLowerCase().includes(query) ||
+          snippet.tags.some((tag) => tag.toLowerCase().includes(query)),
+      );
+    }
+
+    // Apply language filters
+    if (filters.languages.length > 0) {
+      filtered = filtered.filter(snippet => 
+        filters.languages.includes(snippet.language as CodeLanguage)
+      );
+    }
+
+    // Apply tag filters
+    if (filters.tags.length > 0) {
+      filtered = filtered.filter(snippet =>
+        filters.tags.some(tag => snippet.tags.includes(tag))
+      );
+    }
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      let comparison = 0;
+      
+      switch (filters.sortBy) {
+        case "title":
+          comparison = a.title.localeCompare(b.title);
+          break;
+        case "language":
+          comparison = a.language.localeCompare(b.language);
+          break;
+        case "updated_at":
+          comparison = new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime();
+          break;
+        case "created_at":
+        default:
+          comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+          break;
+      }
+      
+      return filters.sortOrder === "asc" ? comparison : -comparison;
+    });
+
+    return filtered;
+  }, [snippets, filters]);
+
+  // Keyboard shortcuts
+  const shortcuts = useMemo(() => [
+    {
+      keys: ["mod", "n"],
+      description: "Create new snippet",
+      action: () => {
+        resetForm();
+        setOpen(true);
+      },
+    },
+    {
+      keys: ["mod", "k"],
+      description: "Focus search",
+      action: () => {
+        const searchInput = document.querySelector('input[placeholder*="Search"]') as HTMLInputElement;
+        searchInput?.focus();
+      },
+    },
+    {
+      keys: ["mod", "a"],
+      description: "Select all snippets",
+      action: () => {
+        if (selectedSnippets.size === filteredAndSortedSnippets.length) {
+          setSelectedSnippets(new Set());
+        } else {
+          setSelectedSnippets(new Set(filteredAndSortedSnippets.map(s => s.id)));
+        }
+      },
+    },
+    {
+      keys: ["escape"],
+      description: "Close dialog or clear selection",
+      action: () => {
+        if (open) {
+          setOpen(false);
+        } else if (selectedSnippets.size > 0) {
+          setSelectedSnippets(new Set());
+        }
+      },
+    },
+    {
+      keys: ["mod", "e"],
+      description: "Export selected snippets",
+      action: () => {
+        if (selectedSnippets.size > 0) {
+          handleExportSelected();
+        }
+      },
+    },
+  ], [open, selectedSnippets, filteredAndSortedSnippets]);
+
+  useKeyboardShortcuts({ shortcuts });
 
   useEffect(() => {
     loadSnippets();
+    loadFavorites();
   }, []);
 
   const loadSnippets = async () => {
@@ -76,6 +192,36 @@ export default function MySnippetsPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadFavorites = () => {
+    try {
+      const saved = localStorage.getItem("snippet-favorites");
+      if (saved) {
+        setFavorites(new Set(JSON.parse(saved)));
+      }
+    } catch (error) {
+      console.error("Failed to load favorites:", error);
+    }
+  };
+
+  const saveFavorites = (newFavorites: Set<string>) => {
+    try {
+      localStorage.setItem("snippet-favorites", JSON.stringify([...newFavorites]));
+      setFavorites(newFavorites);
+    } catch (error) {
+      console.error("Failed to save favorites:", error);
+    }
+  };
+
+  const toggleFavorite = (id: string, isFavorite: boolean) => {
+    const newFavorites = new Set(favorites);
+    if (isFavorite) {
+      newFavorites.add(id);
+    } else {
+      newFavorites.delete(id);
+    }
+    saveFavorites(newFavorites);
   };
 
   const handleSubmit = async () => {
@@ -102,6 +248,7 @@ export default function MySnippetsPage() {
       }
 
       resetForm();
+      setOpen(false);
     } catch (error) {
       console.error("Failed to save snippet:", error);
     } finally {
@@ -124,13 +271,21 @@ export default function MySnippetsPage() {
     try {
       await deleteSnippet(id);
       setSnippets((prev) => prev.filter((s) => s.id !== id));
+      // Remove from favorites and selection
+      const newFavorites = new Set(favorites);
+      newFavorites.delete(id);
+      saveFavorites(newFavorites);
+      setSelectedSnippets(prev => {
+        const newSelection = new Set(prev);
+        newSelection.delete(id);
+        return newSelection;
+      });
     } catch (error) {
       console.error("Failed to delete snippet:", error);
     }
   };
 
   const resetForm = () => {
-    setOpen(false);
     setEditingSnippet(null);
     setTitle("");
     setCode("");
@@ -138,142 +293,308 @@ export default function MySnippetsPage() {
     setTags("");
   };
 
+  // Bulk operations
+  const handleSelectAll = () => {
+    setSelectedSnippets(new Set(filteredAndSortedSnippets.map(s => s.id)));
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedSnippets(new Set());
+  };
+
+  const handleDeleteSelected = async (ids: string[]) => {
+    try {
+      await Promise.all(ids.map(id => deleteSnippet(id)));
+      setSnippets(prev => prev.filter(s => !ids.includes(s.id)));
+      setSelectedSnippets(new Set());
+      
+      // Remove from favorites
+      const newFavorites = new Set(favorites);
+      ids.forEach(id => newFavorites.delete(id));
+      saveFavorites(newFavorites);
+    } catch (error) {
+      console.error("Failed to delete snippets:", error);
+    }
+  };
+
+  const handleExportSelected = () => {
+    const selectedSnippetObjects = snippets.filter(s => selectedSnippets.has(s.id));
+    const timestamp = new Date().toISOString().split('T')[0];
+    SnippetExporter.downloadExport(
+      selectedSnippetObjects,
+      `snippets-export-${timestamp}.json`,
+      { format: "json", includeMetadata: true }
+    );
+  };
+
+  const handleToggleFavoritesSelected = (ids: string[], isFavorite: boolean) => {
+    const newFavorites = new Set(favorites);
+    ids.forEach(id => {
+      if (isFavorite) {
+        newFavorites.add(id);
+      } else {
+        newFavorites.delete(id);
+      }
+    });
+    saveFavorites(newFavorites);
+  };
+
+  const handleAddTagsToSelected = async (ids: string[], newTags: string[]) => {
+    try {
+      const updates = snippets
+        .filter(s => ids.includes(s.id))
+        .map(snippet => ({
+          ...snippet,
+          tags: [...new Set([...snippet.tags, ...newTags])],
+        }));
+
+      await Promise.all(
+        updates.map(snippet => 
+          updateSnippet(snippet.id, {
+            title: snippet.title,
+            code: snippet.code,
+            language: snippet.language,
+            tags: snippet.tags,
+          })
+        )
+      );
+
+      setSnippets(prev => 
+        prev.map(snippet => 
+          updates.find(u => u.id === snippet.id) || snippet
+        )
+      );
+    } catch (error) {
+      console.error("Failed to add tags:", error);
+    }
+  };
+
+  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const importedSnippets = await SnippetImporter.importFromFile(file);
+      
+      // Create all imported snippets
+      const createdSnippets = await Promise.all(
+        importedSnippets.map(snippet => 
+          createSnippet({
+            title: snippet.title,
+            code: snippet.code,
+            language: snippet.language,
+            tags: snippet.tags,
+          })
+        )
+      );
+
+      setSnippets(prev => [...createdSnippets, ...prev]);
+      setImportDialogOpen(false);
+      
+      // Reset file input
+      event.target.value = "";
+    } catch (error) {
+      console.error("Failed to import snippets:", error);
+      alert("Failed to import snippets. Please check the file format.");
+    }
+  };
+
+  const toggleSelection = (id: string) => {
+    setSelectedSnippets(prev => {
+      const newSelection = new Set(prev);
+      if (newSelection.has(id)) {
+        newSelection.delete(id);
+      } else {
+        newSelection.add(id);
+      }
+      return newSelection;
+    });
+  };
+
   if (loading) {
-    return <div className="text-muted-foreground">Loading snippets...</div>;
+    return (
+      <div className="container py-8">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-muted rounded w-48"></div>
+          <div className="h-12 bg-muted rounded"></div>
+          <div className="grid gap-4 sm:grid-cols-1 lg:grid-cols-2">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="h-48 bg-muted rounded"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="container py-8 space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-semibold">My Snippets</h1>
-          {searchQuery && (
-            <p className="text-sm text-muted-foreground">
-              {filteredSnippets.length} result{filteredSnippets.length !== 1 ? "s" : ""} for &ldquo;
-              {searchQuery}&rdquo;
-            </p>
-          )}
+          <h1 className="text-3xl font-bold">My Snippets</h1>
+          <p className="text-muted-foreground">Manage your code snippets</p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => resetForm()} className="w-full sm:w-auto">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Snippet
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{editingSnippet ? "Edit Snippet" : "Add New Snippet"}</DialogTitle>
-              <DialogDescription>
-                {editingSnippet
-                  ? "Update your code snippet details below."
-                  : "Create a new code snippet to save for later use."}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <Input
-                placeholder="Snippet title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-              />
-              <Select value={language} onValueChange={(value: CodeLanguage) => setLanguage(value)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {LANGUAGES.map((lang) => (
-                    <SelectItem key={lang.value} value={lang.value}>
-                      {lang.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <CodeEditor
-                value={code}
-                onChange={setCode}
-                language={language}
-                placeholder="Enter your code here..."
-                className="min-h-[200px]"
-              />
-              <Input
-                placeholder="Tags (comma separated)"
-                value={tags}
-                onChange={(e) => setTags(e.target.value)}
-              />
-              <div className="flex flex-col sm:flex-row gap-2">
-                <Button
-                  onClick={handleSubmit}
-                  disabled={submitting || !title.trim() || !code.trim()}
-                  className="flex-1"
-                >
-                  {submitting ? "Saving..." : editingSnippet ? "Update" : "Save"}
-                </Button>
-                <Button variant="outline" onClick={resetForm} className="flex-1">
-                  Cancel
-                </Button>
+        
+        <div className="flex items-center gap-2">
+          <KeyboardShortcutsHelp shortcuts={shortcuts} />
+          
+          <Button variant="outline" onClick={() => setImportDialogOpen(true)}>
+            <Upload className="h-4 w-4 mr-2" />
+            Import
+          </Button>
+          
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={() => resetForm()} className="w-full sm:w-auto">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Snippet
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>{editingSnippet ? "Edit Snippet" : "Add New Snippet"}</DialogTitle>
+                <DialogDescription>
+                  {editingSnippet
+                    ? "Update your code snippet details below."
+                    : "Create a new code snippet to save for later use."}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <Input
+                  placeholder="Snippet title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="focus-ring"
+                />
+                <Select value={language} onValueChange={(value: CodeLanguage) => setLanguage(value)}>
+                  <SelectTrigger className="focus-ring">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {LANGUAGES.map((lang) => (
+                      <SelectItem key={lang.value} value={lang.value}>
+                        {lang.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <SmartCodeEditor
+                  value={code}
+                  onChange={setCode}
+                  language={language}
+                  placeholder="Enter your code here..."
+                  className="min-h-[300px]"
+                  enableValidation={true}
+                  enableFormatting={true}
+                />
+                <Input
+                  placeholder="Tags (comma separated)"
+                  value={tags}
+                  onChange={(e) => setTags(e.target.value)}
+                  className="focus-ring"
+                />
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={submitting || !title.trim() || !code.trim()}
+                    className="flex-1 btn-primary"
+                  >
+                    {submitting ? "Saving..." : editingSnippet ? "Update" : "Save"}
+                  </Button>
+                  <Button variant="outline" onClick={resetForm} className="flex-1">
+                    Cancel
+                  </Button>
+                </div>
               </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
-      {filteredSnippets.length === 0 ? (
-        <div className="text-center py-8 text-muted-foreground">
-          {searchQuery ? (
-            <p>No snippets found matching &ldquo;{searchQuery}&rdquo;</p>
-          ) : (
-            <p>No snippets yet. Create your first one!</p>
-          )}
+      {/* Import Dialog */}
+      <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Import Snippets</DialogTitle>
+            <DialogDescription>
+              Select a JSON file to import snippets from.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Input
+              type="file"
+              accept=".json"
+              onChange={handleImport}
+              className="focus-ring"
+            />
+            <p className="text-sm text-muted-foreground">
+              Supported formats: JSON files exported from this app or compatible formats.
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <AdvancedSearch
+        filters={filters}
+        onFiltersChange={setFilters}
+        availableTags={availableTags}
+        resultsCount={filteredAndSortedSnippets.length}
+      />
+
+      {selectedSnippets.size > 0 && (
+        <BulkOperations
+          selectedSnippets={selectedSnippets}
+          allSnippets={filteredAndSortedSnippets}
+          onSelectAll={handleSelectAll}
+          onDeselectAll={handleDeselectAll}
+          onDeleteSelected={handleDeleteSelected}
+          onExportSelected={() => handleExportSelected()}
+          onToggleFavorites={handleToggleFavoritesSelected}
+          onAddTagsToSelected={handleAddTagsToSelected}
+        />
+      )}
+
+      {filteredAndSortedSnippets.length === 0 ? (
+        <div className="text-center py-12">
+          <div className="space-y-4">
+            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto">
+              <Plus className="h-8 w-8 text-muted-foreground" />
+            </div>
+            {filters.query || filters.languages.length > 0 || filters.tags.length > 0 ? (
+              <div>
+                <h3 className="text-lg font-medium">No snippets found</h3>
+                <p className="text-muted-foreground">
+                  Try adjusting your search filters or create a new snippet
+                </p>
+              </div>
+            ) : (
+              <div>
+                <h3 className="text-lg font-medium">No snippets yet</h3>
+                <p className="text-muted-foreground">
+                  Create your first snippet to get started
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-1 lg:grid-cols-2">
-          {filteredSnippets.map((snippet) => (
-            <Card key={snippet.id} className="transition-all duration-200 hover:shadow-md">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="min-w-0 flex-1">
-                    <h3 className="font-medium truncate">{snippet.title}</h3>
-                    <p className="text-xs text-muted-foreground">
-                      {snippet.language.toUpperCase()}
-                    </p>
-                  </div>
-                  <div className="flex gap-1 shrink-0">
-                    <CopyButton text={snippet.code} />
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleEdit(snippet)}
-                      title="Edit snippet"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleDelete(snippet.id)}
-                      title="Delete snippet"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-                {snippet.tags.length > 0 && (
-                  <div className="flex gap-2 flex-wrap">
-                    {snippet.tags.map((tag) => (
-                      <Badge key={tag}>{tag}</Badge>
-                    ))}
-                  </div>
-                )}
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="border-t border-border -mx-6 -mb-6 bg-muted/50 p-4 font-mono text-sm overflow-auto max-h-48">
-                  <pre className="whitespace-pre-wrap text-xs sm:text-sm">
-                    {snippet.code.split("\n").slice(0, 8).join("\n")}
-                    {snippet.code.split("\n").length > 8 && "\n..."}
-                  </pre>
-                </div>
-              </CardContent>
-            </Card>
+        <div className="grid gap-6 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
+          {filteredAndSortedSnippets.map((snippet) => (
+            <div key={snippet.id} className="relative">
+              <div className="absolute top-2 left-2 z-10">
+                <SelectionCheckbox
+                  isSelected={selectedSnippets.has(snippet.id)}
+                  onToggle={() => toggleSelection(snippet.id)}
+                />
+              </div>
+              <SnippetCard
+                snippet={snippet}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                onToggleFavorite={toggleFavorite}
+                isFavorite={favorites.has(snippet.id)}
+              />
+            </div>
           ))}
         </div>
       )}

@@ -2,6 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 :root {
   color-scheme: dark;
 }
@@ -10,14 +12,39 @@ html,
 body,
 #__next {
   height: 100%;
+  scroll-behavior: smooth;
 }
 
 body {
   @apply bg-background text-foreground antialiased;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
 }
 
 .container {
   @apply mx-auto px-4 sm:px-6 lg:px-8;
+}
+
+/* Glass morphism utility classes */
+.glass {
+  @apply bg-background/80 backdrop-blur-xl border border-border/50;
+}
+
+.glass-card {
+  @apply bg-card/50 backdrop-blur-xl border border-border/30 shadow-2xl shadow-primary/5;
+}
+
+/* Professional gradients */
+.gradient-primary {
+  background: linear-gradient(135deg, hsl(221 83% 53%) 0%, hsl(264 83% 70%) 100%);
+}
+
+.gradient-muted {
+  background: linear-gradient(135deg, hsl(222 15% 11%) 0%, hsl(215 25% 27%) 100%);
+}
+
+/* Enhanced focus styles */
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background;
 }
 
 /* Code block styles akin to VS Code dark */
@@ -25,14 +52,30 @@ pre,
 code {
   font-family: theme("fontFamily.mono");
 }
+
 pre {
-  @apply bg-muted rounded-md p-4 border border-border overflow-auto;
-}
-code {
-  @apply text-sm;
+  @apply bg-muted rounded-lg p-4 border border-border overflow-auto shadow-inner;
+  background: linear-gradient(145deg, hsl(222 15% 11%), hsl(222 18% 9%));
 }
 
-/* Animation classes */
+code {
+  @apply text-sm bg-muted/50 px-1.5 py-0.5 rounded-md;
+}
+
+/* Professional button styles */
+.btn-primary {
+  @apply bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-2.5 rounded-lg font-medium transition-all duration-200 shadow-lg hover:shadow-xl hover:shadow-primary/25 active:scale-[0.98];
+}
+
+.btn-secondary {
+  @apply bg-secondary hover:bg-secondary/80 text-secondary-foreground px-6 py-2.5 rounded-lg font-medium transition-all duration-200 shadow-md hover:shadow-lg active:scale-[0.98];
+}
+
+.btn-ghost {
+  @apply hover:bg-muted text-foreground px-6 py-2.5 rounded-lg font-medium transition-all duration-200 hover:shadow-md active:scale-[0.98];
+}
+
+/* Enhanced animations */
 @keyframes slide-up {
   from {
     opacity: 0;
@@ -64,16 +107,31 @@ code {
   }
 }
 
+@keyframes shimmer {
+  from {
+    background-position: -200% 0;
+  }
+  to {
+    background-position: 200% 0;
+  }
+}
+
 .animate-slide-up {
-  animation: slide-up 0.2s ease-out;
+  animation: slide-up 0.3s ease-out;
 }
 
 .animate-fade-in {
-  animation: fade-in 0.2s ease-out;
+  animation: fade-in 0.3s ease-out;
 }
 
 .animate-slide-down {
-  animation: slide-down 0.2s ease-out;
+  animation: slide-down 0.3s ease-out;
+}
+
+.shimmer {
+  background: linear-gradient(90deg, transparent 25%, hsl(221 83% 53% / 0.1) 50%, transparent 75%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
 }
 
 /* Hover animations */
@@ -85,17 +143,38 @@ code {
   transform: scale(1.02);
 }
 
-/* Loading animation */
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
+.hover-lift {
+  transition: all 0.2s ease-in-out;
 }
 
-.animate-pulse {
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px hsl(221 83% 53% / 0.1), 0 8px 10px -6px hsl(221 83% 53% / 0.1);
+}
+
+/* Loading states */
+.loading-skeleton {
+  @apply bg-muted animate-pulse rounded-md;
+  background: linear-gradient(90deg, hsl(222 15% 11%) 25%, hsl(215 25% 27%) 50%, hsl(222 15% 11%) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-muted/50 rounded-full;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-border hover:bg-border/80 rounded-full;
+  transition: background-color 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-primary/60;
 }

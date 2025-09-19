@@ -21,13 +21,13 @@ import {
 } from "@/components/ui/select";
 import { CodeEditor, type CodeLanguage } from "@/components/code-editor";
 import { MonacoEditor } from "@/components/monaco-editor";
-import { Plus, Upload, Settings, HelpCircle, Bot, FileText } from "lucide-react";
+import { Plus, Upload } from "lucide-react";
 import { getSnippets, createSnippet, updateSnippet, deleteSnippet, type UnifiedSnippet } from "@/lib/snippets";
+import { getProjects } from "@/lib/projects";
 import type { Snippet } from "@/lib/supabase";
+import { Database } from "@/lib/supabase";
 import { AdvancedSearch, type SearchFilters } from "@/components/advanced-search";
 import { EnhancedSnippetCard } from "@/components/enhanced-snippet-card";
-import { AICodeAssistant } from "@/components/ai-code-assistant";
-import { SmartTemplates } from "@/components/smart-templates";
 import { BulkOperations, SelectionCheckbox } from "@/components/bulk-operations";
 import { useKeyboardShortcuts, KeyboardShortcutsHelp } from "@/components/keyboard-shortcuts";
 import { SnippetExporter, SnippetImporter } from "@/lib/snippet-export";
@@ -47,6 +47,7 @@ const LANGUAGES: { value: CodeLanguage; label: string }[] = [
 export default function MySnippetsPage() {
   const { user } = useUser();
   const [snippets, setSnippets] = useState<Snippet[]>([]);
+  const [projects, setProjects] = useState<Database['public']['Tables']['projects']['Row'][]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [editingSnippet, setEditingSnippet] = useState<Snippet | null>(null);
@@ -54,15 +55,11 @@ export default function MySnippetsPage() {
   const [code, setCode] = useState("");
   const [language, setLanguage] = useState<CodeLanguage>("ts");
   const [tags, setTags] = useState<string>("");
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [projectId, setProjectId] = useState<string>("none");
-  const [selectedSnippet, setSelectedSnippet] = useState<UnifiedSnippet | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [selectedSnippets, setSelectedSnippets] = useState<Set<string>>(new Set());
   const [importDialogOpen, setImportDialogOpen] = useState(false);
-  const [showAIAssistant, setShowAIAssistant] = useState(false);
-  const [showTemplates, setShowTemplates] = useState(false);
 
   // Advanced search filters
   const [filters, setFilters] = useState<SearchFilters>({
@@ -79,12 +76,20 @@ export default function MySnippetsPage() {
     return [...new Set(allTags)].sort();
   }, [snippets]);
 
-  // Mock projects for now - replace with actual API call
-  const projects = [
-    { id: "1", name: "React Components", color: "bg-blue-500" },
-    { id: "2", name: "API Utilities", color: "bg-green-500" },
-    { id: "3", name: "CSS Animations", color: "bg-purple-500" },
-  ];
+  // Load projects from database
+  useEffect(() => {
+    const loadProjects = async () => {
+      if (user) {
+        try {
+          const projectsData = await getProjects(user.id);
+          setProjects(projectsData);
+        } catch (error) {
+          console.error('Failed to load projects:', error);
+        }
+      }
+    };
+    loadProjects();
+  }, [user]);
 
   // Filter and sort snippets based on search filters
   const filteredAndSortedSnippets = useMemo(() => {
@@ -484,19 +489,8 @@ export default function MySnippetsPage() {
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   className="focus-ring"
+                  required
                 />
-                <Select value={language} onValueChange={(value: CodeLanguage) => setLanguage(value)}>
-                  <SelectTrigger className="focus-ring">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {LANGUAGES.map((lang) => (
-                      <SelectItem key={lang.value} value={lang.value}>
-                        {lang.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
                 
                 <Select value={projectId} onValueChange={setProjectId}>
                   <SelectTrigger className="focus-ring">
@@ -507,7 +501,10 @@ export default function MySnippetsPage() {
                     {projects.map((project) => (
                       <SelectItem key={project.id} value={project.id}>
                         <div className="flex items-center gap-2">
-                          <div className={`w-3 h-3 rounded-full ${project.color}`} />
+                          <div 
+                            className="w-3 h-3 rounded-full" 
+                            style={{ backgroundColor: project.color }}
+                          />
                           {project.name}
                         </div>
                       </SelectItem>
@@ -519,18 +516,60 @@ export default function MySnippetsPage() {
                   onChange={setCode}
                   language={language}
                   height="300px"
-                  onLanguageChange={(newLang) => setLanguage(newLang as CodeLanguage)}
                 />
-                <Input
-                  placeholder="Tags (comma separated)"
-                  value={tags}
-                  onChange={(e) => setTags(e.target.value)}
-                  className="focus-ring"
-                />
+                <Select value={language} onValueChange={(value: CodeLanguage) => setLanguage(value)}>
+                  <SelectTrigger className="focus-ring">
+                    <SelectValue placeholder="Select language" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {LANGUAGES.map((lang) => (
+                      <SelectItem key={lang.value} value={lang.value}>
+                        {lang.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Tags (optional)</label>
+                  <Select value="" onValueChange={(value) => {
+                    if (value && !tags.includes(value)) {
+                      const newTags = tags ? `${tags}, ${value}` : value;
+                      setTags(newTags);
+                    }
+                  }}>
+                    <SelectTrigger className="focus-ring">
+                      <SelectValue placeholder="Add tags" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableTags.map((tag) => (
+                        <SelectItem key={tag} value={tag}>
+                          {tag}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {tags && (
+                    <div className="flex flex-wrap gap-1">
+                      {tags.split(",").map((tag, index) => (
+                        <span
+                          key={index}
+                          className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full cursor-pointer hover:bg-blue-200"
+                          onClick={() => {
+                            const tagList = tags.split(",").map(t => t.trim());
+                            tagList.splice(index, 1);
+                            setTags(tagList.join(", "));
+                          }}
+                        >
+                          {tag.trim()} ×
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <div className="flex flex-col sm:flex-row gap-2">
                   <Button
                     onClick={handleSubmit}
-                    disabled={submitting || !title.trim() || !code.trim()}
+                    disabled={submitting || !title.trim() || !code.trim() || !language}
                     className="flex-1 btn-primary"
                   >
                     {submitting ? "Saving..." : editingSnippet ? "Update" : "Save"}
@@ -538,48 +577,7 @@ export default function MySnippetsPage() {
                   <Button variant="outline" onClick={resetForm} className="flex-1">
                     Cancel
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setShowAIAssistant(!showAIAssistant)}
-                    className="flex items-center gap-2"
-                  >
-                    <Bot className="h-4 w-4" />
-                    AI Assistant
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setShowTemplates(!showTemplates)}
-                    className="flex items-center gap-2"
-                  >
-                    <FileText className="h-4 w-4" />
-                    Templates
-                  </Button>
                 </div>
-                
-                {/* AI Assistant Panel */}
-                {showAIAssistant && (
-                  <div className="mt-4 border-t pt-4">
-                    <AICodeAssistant
-                      code={code}
-                      language={language}
-                      onCodeChange={setCode}
-                      onLanguageChange={(lang) => setLanguage(lang as CodeLanguage)}
-                    />
-                  </div>
-                )}
-
-                {/* Smart Templates Panel */}
-                {showTemplates && (
-                  <div className="mt-4 border-t pt-4">
-                    <SmartTemplates
-                      onUseTemplate={(templateCode, templateLanguage) => {
-                        setCode(templateCode);
-                        setLanguage(templateLanguage as CodeLanguage);
-                      }}
-                      currentLanguage={language}
-                    />
-                  </div>
-                )}
               </div>
             </DialogContent>
           </Dialog>

@@ -41,6 +41,7 @@ import {
   deleteProject,
 } from "@/lib/projects";
 import { Database } from "@/lib/supabase";
+import { createSupabaseClient } from "@/lib/supabase";
 
 type Project = Database['public']['Tables']['projects']['Row'];
 
@@ -51,6 +52,7 @@ export default function ProjectsPage() {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [error, setError] = useState<string>('');
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -68,6 +70,7 @@ export default function ProjectsPage() {
     
     try {
       setLoading(true);
+      setError('');
       const [projectsData, statsData] = await Promise.all([
         getProjects(user.id),
         getProjectStats(user.id)
@@ -75,8 +78,13 @@ export default function ProjectsPage() {
       
       setProjects(projectsData);
       setProjectStats(statsData.snippetsPerProject);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load projects:', error);
+      if (error.message && error.message.includes('table')) {
+        setError('Database tables not found. Please run the setup script in your Supabase dashboard.');
+      } else {
+        setError('Failed to load projects. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -87,6 +95,7 @@ export default function ProjectsPage() {
     if (!user) return;
 
     try {
+      setError('');
       if (editingProject) {
         const updated = await updateProject(editingProject.id, user.id, formData);
         if (updated) {
@@ -102,8 +111,13 @@ export default function ProjectsPage() {
       setIsDialogOpen(false);
       setEditingProject(null);
       setFormData({ name: '', description: '', color: getRandomProjectColor() });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to save project:', error);
+      if (error.message && error.message.includes('table')) {
+        setError('Database tables not found. Please run the setup script in your Supabase dashboard.');
+      } else {
+        setError('Failed to save project. Please try again.');
+      }
     }
   };
 
@@ -242,6 +256,29 @@ export default function ProjectsPage() {
           </DialogContent>
         </Dialog>
       </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-red-800">{error}</p>
+              {error.includes('Database tables') && (
+                <div className="mt-2">
+                  <p className="text-xs text-red-600">
+                    Please run the SQL script located at <code>/scripts/create-tables.sql</code> in your Supabase dashboard.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

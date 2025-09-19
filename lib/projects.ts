@@ -28,21 +28,32 @@ export async function createProject(
 ): Promise<Project | null> {
   const supabase = createSupabaseClient();
   
-  const { data, error } = await supabase
-    .from('projects')
-    .insert({
-      ...project,
-      user_id: userId,
-    })
-    .select()
-    .single();
+  try {
+    const { data, error } = await supabase
+      .from('projects')
+      .insert({
+        ...project,
+        user_id: userId,
+      })
+      .select()
+      .single();
 
-  if (error) {
+    if (error) {
+      console.error('Error creating project:', error);
+      
+      // If table doesn't exist, provide helpful error message
+      if (error.code === 'PGRST116') {
+        throw new Error('Projects table does not exist. Please run the setup SQL script in your Supabase dashboard.');
+      }
+      
+      return null;
+    }
+
+    return data;
+  } catch (error) {
     console.error('Error creating project:', error);
-    return null;
+    throw error;
   }
-
-  return data;
 }
 
 export async function getProjects(userId: string): Promise<Project[]> {

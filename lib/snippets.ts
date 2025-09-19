@@ -68,6 +68,7 @@ class SnippetsService {
       return localStorageService.addSnippet({
         ...snippet,
         user_id: currentUserId,
+        project_id: snippet.project_id || null,
       });
     } else {
       const supabase = createSupabaseClient();

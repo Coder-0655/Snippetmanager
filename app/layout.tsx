@@ -2,7 +2,14 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Inter } from "next/font/google";
 import { ThemeProvider } from "next-themes";
-import { AuthProvider } from "@/lib/auth";
+import {
+  ClerkProvider,
+  SignInButton,
+  SignUpButton,
+  SignedIn,
+  SignedOut,
+  UserButton,
+} from '@clerk/nextjs';
 import Link from "next/link";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -15,10 +22,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-          <AuthProvider>
+    <ClerkProvider>
+      <html lang="en" suppressHydrationWarning>
+        <body className={inter.className}>
+          <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
             <div className="min-h-dvh flex flex-col">
               <header className="border-b border-border">
                 <div className="container flex h-14 items-center justify-between">
@@ -29,9 +36,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     <Link className="hover:text-foreground" href="/dashboard">
                       Dashboard
                     </Link>
-                    <Link className="hover:text-foreground" href="/login">
-                      Login
-                    </Link>
+                    <SignedOut>
+                      <SignInButton>
+                        <button className="hover:text-foreground">Sign In</button>
+                      </SignInButton>
+                      <SignUpButton>
+                        <button className="bg-primary text-primary-foreground rounded-lg font-medium text-sm h-9 px-4 hover:bg-primary/90">
+                          Sign Up
+                        </button>
+                      </SignUpButton>
+                    </SignedOut>
+                    <SignedIn>
+                      <UserButton />
+                    </SignedIn>
                   </nav>
                 </div>
               </header>
@@ -42,9 +59,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 </div>
               </footer>
             </div>
-          </AuthProvider>
-        </ThemeProvider>
-      </body>
-    </html>
+          </ThemeProvider>
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }

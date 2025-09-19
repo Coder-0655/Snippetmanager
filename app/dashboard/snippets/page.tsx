@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { useUser } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -42,6 +43,7 @@ const LANGUAGES: { value: CodeLanguage; label: string }[] = [
 ];
 
 export default function MySnippetsPage() {
+  const { user } = useUser();
   const [snippets, setSnippets] = useState<Snippet[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -243,7 +245,7 @@ export default function MySnippetsPage() {
         const updated = await updateSnippet(editingSnippet.id, snippetData);
         setSnippets((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
       } else {
-        const newSnippet = await createSnippet(snippetData);
+        const newSnippet = await createSnippet(snippetData, user?.id);
         setSnippets((prev) => [newSnippet, ...prev]);
       }
 

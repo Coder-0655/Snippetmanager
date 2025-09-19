@@ -2,7 +2,7 @@
 
 import { createSupabaseClient, isSupabaseConfigured } from "./supabase";
 import { localStorageService, type LocalSnippet } from "./local-storage";
-import { localAuthService } from "./local-auth";
+import { getCurrentUserId } from "./clerk-auth";
 import type { Snippet } from "./supabase";
 
 // Type that works for both Supabase and local snippets
@@ -36,16 +36,16 @@ class SnippetsService {
     language: string;
     tags: string[];
     description?: string;
-  }): Promise<UnifiedSnippet> {
+  }, userId?: string): Promise<UnifiedSnippet> {
     if (this.isLocalModeActive) {
-      const currentUser = localAuthService.getCurrentUser();
-      if (!currentUser) {
+      const currentUserId = userId || getCurrentUserId();
+      if (!currentUserId) {
         throw new Error("User not authenticated");
       }
 
       return localStorageService.addSnippet({
         ...snippet,
-        user_id: currentUser.id,
+        user_id: currentUserId,
       });
     } else {
       const supabase = createSupabaseClient();
@@ -242,8 +242,8 @@ const snippetsService = new SnippetsService();
 
 // Export functions for backward compatibility
 export const getSnippets = () => snippetsService.getSnippets();
-export const createSnippet = (snippet: Parameters<typeof snippetsService.createSnippet>[0]) => 
-  snippetsService.createSnippet(snippet);
+export const createSnippet = (snippet: Parameters<typeof snippetsService.createSnippet>[0], userId?: string) => 
+  snippetsService.createSnippet(snippet, userId);
 export const updateSnippet = (id: string, updates: Parameters<typeof snippetsService.updateSnippet>[1]) => 
   snippetsService.updateSnippet(id, updates);
 export const deleteSnippet = (id: string) => snippetsService.deleteSnippet(id);

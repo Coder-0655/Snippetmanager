@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth } from "@/lib/auth";
+import { useUser, useClerk } from "@clerk/nextjs";
 import { SearchProvider, useSearch } from "@/lib/search-context";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -16,7 +16,8 @@ import {
 import { Button } from "@/components/ui/button";
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
-  const { user, signOut, loading } = useAuth();
+  const { user, isLoaded } = useUser();
+  const { signOut } = useClerk();
   const { searchQuery, setSearchQuery } = useSearch();
   const router = useRouter();
 
@@ -25,7 +26,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     router.push("/");
   };
 
-  if (loading) {
+  if (!isLoaded) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100dvh-3.5rem-4rem)]">
         <div className="text-muted-foreground">Loading...</div>
@@ -80,12 +81,12 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-2 shrink-0">
                   <User className="h-4 w-4" />
-                  <span className="hidden sm:inline">{user.email?.split("@")[0] || "User"}</span>
+                  <span className="hidden sm:inline">{user.emailAddresses[0]?.emailAddress?.split("@")[0] || "User"}</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem className="text-sm text-muted-foreground">
-                  {user.email}
+                  {user.emailAddresses[0]?.emailAddress}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut} className="gap-2">

@@ -1,14 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useUser, useClerk } from "@clerk/nextjs";
-import { SearchProvider, useSearch } from "@/lib/search-context";
-import { useRouter, usePathname } from "next/navigation";
+import { useUser } from "@clerk/nextjs";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { 
-  Search, 
   User, 
-  LogOut, 
   Menu, 
   X, 
   Home, 
@@ -18,16 +15,13 @@ import {
   FolderOpen,
   Plus
 } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { ModernCard } from "@/components/ui/modern-card";
 import { cn } from "@/lib/utils";
 
 function Sidebar({ className, onNavigate }: { className?: string; onNavigate?: () => void }) {
@@ -91,15 +85,7 @@ function Sidebar({ className, onNavigate }: { className?: string; onNavigate?: (
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const { user, isLoaded } = useUser();
-  const { signOut } = useClerk();
-  const { searchQuery, setSearchQuery } = useSearch();
-  const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  const handleSignOut = async () => {
-    await signOut();
-    router.push("/");
-  };
 
   if (!isLoaded) {
     return (
@@ -158,16 +144,8 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
               <Menu className="h-4 w-4" />
             </Button>
 
-            {/* Search */}
-            <div className="relative flex-1 max-w-xl">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search snippets..."
-                className="pl-9 bg-muted/50"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
+            {/* Spacer to push user menu to the right */}
+            <div className="flex-1" />
 
             {/* User Menu */}
             <DropdownMenu>
@@ -182,11 +160,6 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuItem className="text-sm text-muted-foreground">
                   {user?.emailAddresses[0]?.emailAddress}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleSignOut} className="gap-2">
-                  <LogOut className="h-4 w-4" />
-                  Sign out
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -204,8 +177,6 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
-    <SearchProvider>
-      <DashboardContent>{children}</DashboardContent>
-    </SearchProvider>
+    <DashboardContent>{children}</DashboardContent>
   );
 }

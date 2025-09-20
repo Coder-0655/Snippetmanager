@@ -9,10 +9,12 @@ import { Badge } from "@/components/ui/badge";
 import { Code2, Plus, Clock, Tag, TrendingUp, Star } from "lucide-react";
 import Link from "next/link";
 import type { UnifiedSnippet } from "@/lib/snippets";
+import { AnalyticsOverlay } from "@/components/analytics-overlay";
 
 export default function DashboardHome() {
   const { user } = useUser();
   const [recentSnippets, setRecentSnippets] = useState<UnifiedSnippet[]>([]);
+  const [allSnippets, setAllSnippets] = useState<UnifiedSnippet[]>([]);
   const [stats, setStats] = useState({
     total: 0,
     thisWeek: 0,
@@ -20,6 +22,8 @@ export default function DashboardHome() {
   });
   const [topTags, setTopTags] = useState<Array<{ tag: string; count: number }>>([]);
   const [loading, setLoading] = useState(true);
+  const [analyticsOpen, setAnalyticsOpen] = useState(false);
+  const [analyticsPeriod, setAnalyticsPeriod] = useState<"week" | "month">("week");
 
   useEffect(() => {
     if (user) {
@@ -34,6 +38,7 @@ export default function DashboardHome() {
       // Load snippets
       const snippets = await getSnippets(user?.id);
       setRecentSnippets(snippets.slice(0, 5));
+      setAllSnippets(snippets);
       
       // Calculate stats
       const now = new Date();
@@ -58,6 +63,11 @@ export default function DashboardHome() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const openAnalytics = (period: "week" | "month") => {
+    setAnalyticsPeriod(period);
+    setAnalyticsOpen(true);
   };
 
   if (loading) {
@@ -106,7 +116,12 @@ export default function DashboardHome() {
           </div>
         </ModernCard>
         
-        <ModernCard variant="elevated" animate>
+        <ModernCard 
+          variant="elevated" 
+          animate 
+          className="cursor-pointer hover:scale-105 transition-transform duration-200"
+          onClick={() => openAnalytics("week")}
+        >
           <div className="flex items-center gap-3">
             <div className="p-2 bg-green-500/10 rounded-lg">
               <TrendingUp className="h-5 w-5 text-green-600" />
@@ -114,11 +129,17 @@ export default function DashboardHome() {
             <div>
               <p className="text-sm text-muted-foreground">This Week</p>
               <p className="text-2xl font-bold">{stats.thisWeek}</p>
+              <p className="text-xs text-muted-foreground mt-1">Click for details</p>
             </div>
           </div>
         </ModernCard>
         
-        <ModernCard variant="elevated" animate>
+        <ModernCard 
+          variant="elevated" 
+          animate 
+          className="cursor-pointer hover:scale-105 transition-transform duration-200"
+          onClick={() => openAnalytics("month")}
+        >
           <div className="flex items-center gap-3">
             <div className="p-2 bg-blue-500/10 rounded-lg">
               <Clock className="h-5 w-5 text-blue-600" />
@@ -126,6 +147,7 @@ export default function DashboardHome() {
             <div>
               <p className="text-sm text-muted-foreground">This Month</p>
               <p className="text-2xl font-bold">{stats.thisMonth}</p>
+              <p className="text-xs text-muted-foreground mt-1">Click for details</p>
             </div>
           </div>
         </ModernCard>
@@ -246,6 +268,14 @@ export default function DashboardHome() {
           </Button>
         </div>
       </ModernCard>
+
+      {/* Analytics Overlay */}
+      <AnalyticsOverlay
+        isOpen={analyticsOpen}
+        onClose={() => setAnalyticsOpen(false)}
+        snippets={allSnippets}
+        period={analyticsPeriod}
+      />
     </div>
   );
 }

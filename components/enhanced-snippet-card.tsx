@@ -19,13 +19,13 @@ import {
   Save,
   X,
   Check,
-  Share2
+  Globe,
+  Lock
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import type { Snippet } from "@/lib/supabase";
 import { CopyButton } from "@/components/copy-button";
 import { MonacoEditor } from "@/components/monaco-editor";
-import { CollaborationHub } from "@/components/collaboration-hub";
 import { updateSnippet } from "@/lib/snippets";
 
 interface EnhancedSnippetCardProps {
@@ -33,6 +33,7 @@ interface EnhancedSnippetCardProps {
   onEdit: (snippet: Snippet) => void;
   onDelete: (id: string) => void;
   onToggleFavorite?: (id: string, isFavorite: boolean) => void;
+  onTogglePublic?: (id: string, isPublic: boolean) => void;
   isFavorite?: boolean;
   showFullCode?: boolean;
   onUpdate?: (snippet: Snippet) => void;
@@ -43,6 +44,7 @@ export function EnhancedSnippetCard({
   onEdit,
   onDelete,
   onToggleFavorite,
+  onTogglePublic,
   isFavorite = false,
   showFullCode = false,
   onUpdate,
@@ -50,7 +52,6 @@ export function EnhancedSnippetCard({
   const [isExpanded, setIsExpanded] = useState(showFullCode);
   const [copySuccess, setCopySuccess] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [showCollaboration, setShowCollaboration] = useState(false);
   const [editData, setEditData] = useState({
     title: snippet.title,
     code: snippet.code,
@@ -135,8 +136,8 @@ export function EnhancedSnippetCard({
 
   if (isEditing) {
     return (
-      <Card className="border-2 border-blue-200 dark:border-blue-800 bg-gradient-to-br from-blue-50/50 to-background dark:from-blue-950/20 shadow-lg">
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-purple-500" />
+      <Card className="border-2 border-primary/50 dark:border-primary/30 bg-gradient-to-br from-primary/5 to-background shadow-lg">
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary to-primary/60" />
         
         <CardHeader className="pb-4 space-y-4">
           <div className="flex items-start justify-between gap-3">
@@ -147,7 +148,7 @@ export function EnhancedSnippetCard({
                   value={editData.title}
                   onChange={(e) => setEditData(prev => ({ ...prev, title: e.target.value }))}
                   placeholder="Snippet title"
-                  className="text-lg font-semibold border-muted-foreground/20 focus:border-blue-500 transition-colors"
+                  className="text-lg font-semibold border-muted-foreground/20 focus:border-primary transition-colors"
                 />
               </div>
               <div className="space-y-2">
@@ -156,7 +157,7 @@ export function EnhancedSnippetCard({
                   value={editData.tags}
                   onChange={(e) => setEditData(prev => ({ ...prev, tags: e.target.value }))}
                   placeholder="Tags (comma separated)"
-                  className="text-sm border-muted-foreground/20 focus:border-blue-500 transition-colors"
+                  className="text-sm border-muted-foreground/20 focus:border-primary transition-colors"
                 />
               </div>
             </div>
@@ -166,7 +167,7 @@ export function EnhancedSnippetCard({
                 size="sm"
                 onClick={handleSaveEdit}
                 disabled={saving}
-                className="h-9 px-4 bg-emerald-500 hover:bg-emerald-600 text-white border-0"
+                className="h-9 px-4 bg-primary hover:bg-primary/90 text-primary-foreground border-0"
               >
                 {saving ? (
                   <>
@@ -297,15 +298,17 @@ export function EnhancedSnippetCard({
             >
               <ExternalLink className="h-4 w-4" />
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowCollaboration(!showCollaboration)}
-              title="Share and collaborate"
-              className="h-9 w-9 p-0 text-muted-foreground hover:text-purple-500 hover:bg-purple-50 dark:hover:bg-purple-950/20 transition-all duration-200"
-            >
-              <Share2 className="h-4 w-4" />
-            </Button>
+            {onTogglePublic && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onTogglePublic(snippet.id, !(snippet as any).is_public)}
+                title={(snippet as any).is_public ? "Make private" : "Make public"}
+                className="h-9 w-9 p-0 text-muted-foreground hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-950/20 transition-all duration-200"
+              >
+                {(snippet as any).is_public ? <Globe className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="sm"
@@ -338,18 +341,18 @@ export function EnhancedSnippetCard({
       <CardContent className="pt-0 pb-4">
         <div className="relative">
           {/* Code block with improved styling */}
-          <div className="border border-muted/40 rounded-xl bg-muted/10 backdrop-blur-sm p-4 font-mono text-sm overflow-hidden group/code">
+          <div className="border border-border rounded-xl bg-card backdrop-blur-sm p-4 font-mono text-sm overflow-hidden group/code transition-colors">
             <div className="absolute top-3 right-3 opacity-0 group-hover/code:opacity-100 transition-opacity">
               <Badge variant="secondary" className="text-xs bg-background/80 backdrop-blur">
                 {snippet.language}
               </Badge>
             </div>
             
-            <pre className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/90 pr-16">
+            <pre className="whitespace-pre-wrap text-sm leading-relaxed text-foreground pr-16">
               <code className="language-javascript">
                 {displayCode}
                 {!isExpanded && hasMoreLines && (
-                  <span className="text-muted-foreground/70 italic">
+                  <span className="text-muted-foreground italic">
                     \n\n... {codeLines.length - 8} more lines
                   </span>
                 )}
@@ -364,7 +367,7 @@ export function EnhancedSnippetCard({
                 variant="ghost"
                 size="sm"
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="h-8 text-xs px-4 bg-muted/30 hover:bg-muted/60 border border-muted/40 rounded-full transition-all duration-200"
+                className="h-8 text-xs px-4 bg-muted/50 hover:bg-muted border border-border rounded-full transition-all duration-200"
               >
                 {isExpanded ? (
                   <>
@@ -390,16 +393,6 @@ export function EnhancedSnippetCard({
           )}
         </div>
       </CardContent>
-      
-      {/* Collaboration Hub */}
-      {showCollaboration && (
-        <div className="border-t border-muted/30 bg-muted/10 p-4">
-          <CollaborationHub 
-            snippet={snippet}
-            onUpdate={onUpdate}
-          />
-        </div>
-      )}
     </Card>
   );
 }

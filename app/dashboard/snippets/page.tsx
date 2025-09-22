@@ -21,9 +21,11 @@ import {
 } from "@/components/ui/select";
 import { CodeEditor, type CodeLanguage } from "@/components/code-editor";
 import { MonacoEditor } from "@/components/monaco-editor";
-import { Plus, Upload } from "lucide-react";
+import { Plus, Upload, Crown } from "lucide-react";
 import { getSnippets, createSnippet, updateSnippet, deleteSnippet, type UnifiedSnippet } from "@/lib/snippets";
 import { getProjects } from "@/lib/projects";
+import { canCreatePrivateSnippets } from "@/lib/subscription";
+import { toggleSnippetPublic } from "@/lib/community";
 import type { Snippet } from "@/lib/supabase";
 import { Database } from "@/lib/supabase";
 import { AdvancedSearch, type SearchFilters } from "@/components/advanced-search";
@@ -31,6 +33,9 @@ import { EnhancedSnippetCard } from "@/components/enhanced-snippet-card";
 import { BulkOperations, SelectionCheckbox } from "@/components/bulk-operations";
 import { useKeyboardShortcuts, KeyboardShortcutsHelp } from "@/components/keyboard-shortcuts";
 import { SnippetExporter, SnippetImporter } from "@/lib/snippet-export";
+import { MediaUpload } from "@/components/media-upload";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 
 const LANGUAGES: { value: CodeLanguage; label: string }[] = [
   { value: "ts", label: "TypeScript" },
@@ -56,7 +61,10 @@ export default function MySnippetsPage() {
   const [language, setLanguage] = useState<CodeLanguage>("ts");
   const [tags, setTags] = useState<string>("");
   const [projectId, setProjectId] = useState<string>("none");
+  const [isPublic, setIsPublic] = useState(true);
+  const [canCreatePrivate, setCanCreatePrivate] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string>("");
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [selectedSnippets, setSelectedSnippets] = useState<Set<string>>(new Set());
   const [importDialogOpen, setImportDialogOpen] = useState(false);
@@ -89,6 +97,24 @@ export default function MySnippetsPage() {
       }
     };
     loadProjects();
+  }, [user]);
+
+  // Check subscription permissions
+  useEffect(() => {
+    const checkPrivateSnippetPermission = async () => {
+      if (!user) return;
+      try {
+        const canCreate = await canCreatePrivateSnippets(user.id);
+        setCanCreatePrivate(canCreate);
+        // If user can't create private snippets, force public
+        if (!canCreate) {
+          setIsPublic(true);
+        }
+      } catch (error) {
+        console.error('Error checking subscription:', error);
+      }
+    };
+    checkPrivateSnippetPermission();
   }, [user]);
 
   // Filter and sort snippets based on search filters
@@ -249,6 +275,7 @@ export default function MySnippetsPage() {
     if (!title.trim() || !code.trim()) return;
 
     setSubmitting(true);
+    setError("");
     try {
       const snippetData = {
         title: title.trim(),
@@ -271,10 +298,38 @@ export default function MySnippetsPage() {
 
       resetForm();
       setOpen(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to save snippet:", error);
+      if (error.message && error.message.includes('subscription limits')) {
+        setError(error.message);
+      } else if (error.message && error.message.includes('maximum')) {
+        setError(error.message);
+      } else {
+        setError('Failed to save snippet. Please try again.');
+      }
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleTogglePublic = async (snippetId: string, newIsPublic: boolean) => {
+    if (!user) return;
+
+    // Check if user is trying to make snippet private without permission
+    if (!newIsPublic && !canCreatePrivate) {
+      alert("Private snippets are only available for PRO users. Please upgrade your plan to make snippets private.");
+      return;
+    }
+
+    try {
+      const success = await toggleSnippetPublic(snippetId, newIsPublic);
+      if (success) {
+        // Refresh snippets to get updated data
+        loadSnippets();
+      }
+    } catch (error) {
+      console.error('Error toggling snippet privacy:', error);
+      alert('Failed to update snippet privacy. Please try again.');
     }
   };
 
@@ -315,6 +370,7 @@ export default function MySnippetsPage() {
     setLanguage("ts");
     setTags("");
     setProjectId("none");
+    setError("");
   };
 
   // Bulk operations
@@ -566,6 +622,79 @@ export default function MySnippetsPage() {
                     </div>
                   )}
                 </div>
+
+                {/* Public/Private Toggle */}
+                <div className="space-y-3 p-4 bg-muted/30 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <label className="text-sm font-medium">
+                        Snippet Visibility
+                      </label>
+                      <p className="text-xs text-muted-foreground">
+                        {isPublic 
+                          ? "This snippet will be visible in the community hub" 
+                          : canCreatePrivate 
+                            ? "This snippet will be private and only visible to you"
+                            : "Private snippets require a PRO subscription"
+                        }
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-sm ${isPublic ? 'text-muted-foreground' : 'font-medium'}`}>
+                        Private
+                      </span>
+                      <Switch
+                        checked={isPublic}
+                        onCheckedChange={(checked) => {
+                          if (!checked && !canCreatePrivate) {
+                            alert("Private snippets are only available for PRO users. Please upgrade your plan.");
+                            return;
+                          }
+                          setIsPublic(checked);
+                        }}
+                      />
+                      <span className={`text-sm ${isPublic ? 'font-medium' : 'text-muted-foreground'}`}>
+                        Public
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {!canCreatePrivate && (
+                    <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-50 p-2 rounded">
+                      <Crown className="h-3 w-3" />
+                      <span>Upgrade to PRO to create private snippets</span>
+                    </div>
+                  )}
+                </div>
+
+                {error && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                    <p className="text-sm text-red-600">{error}</p>
+                  </div>
+                )}
+
+                {/* Media Upload Section */}
+                <div className="space-y-3">
+                  <label className="text-sm font-medium">
+                    Media Attachments (Optional)
+                  </label>
+                  <p className="text-xs text-muted-foreground">
+                    Add images or videos to provide visual context for your code snippet
+                  </p>
+                  <MediaUpload
+                    value={[]}
+                    onChange={() => {}}
+                    maxFiles={3}
+                    maxFileSize={5}
+                    disabled={false}
+                  />
+                </div>
+
+                {error && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                    <p className="text-sm text-red-600">{error}</p>
+                  </div>
+                )}
                 <div className="flex flex-col sm:flex-row gap-2">
                   <Button
                     onClick={handleSubmit}
@@ -665,6 +794,7 @@ export default function MySnippetsPage() {
                 onEdit={handleEdit}
                 onDelete={handleDelete}
                 onToggleFavorite={toggleFavorite}
+                onTogglePublic={handleTogglePublic}
                 isFavorite={favorites.has(snippet.id)}
                 onUpdate={(updatedSnippet) => {
                   setSnippets(prev => prev.map(s => s.id === updatedSnippet.id ? updatedSnippet : s));

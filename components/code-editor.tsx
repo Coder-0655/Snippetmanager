@@ -28,7 +28,7 @@ export function CodeEditor({
 }) {
   return (
     <div
-      className={"rounded-md border border-border bg-muted font-mono text-sm " + (className ?? "")}
+      className={"rounded-md border border-border bg-card font-mono text-sm " + (className ?? "")}
     >
       <Editor
         value={value}
@@ -36,10 +36,9 @@ export function CodeEditor({
         highlight={(code) => Prism.highlight(code, Prism.languages[mapLang(language)], language)}
         padding={12}
         textareaId="code-editor"
-        className="min-h-[200px] outline-none"
-        textareaClassName="bg-transparent focus:outline-none"
+        className="min-h-[200px] outline-none text-foreground"
+        textareaClassName="bg-transparent focus:outline-none text-foreground placeholder:text-muted-foreground"
         placeholder={placeholder}
-        style={{ caretColor: "white" }}
       />
     </div>
   );

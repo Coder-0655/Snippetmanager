@@ -3,6 +3,7 @@ import { Code2, Search, Share2 } from "lucide-react";
 import SnippetPreview from "@/components/snippet-preview";
 import { ModernCard } from "@/components/ui/modern-card";
 import { HomePageContent } from "@/components/homepage-content";
+import { CommunitySnippetsSection } from "@/components/community-snippets-section";
 
 export default function HomePage() {
   return (
@@ -58,6 +59,9 @@ export default function HomePage() {
           />
         </div>
       </section>
+
+      {/* Community Snippets Section */}
+      <CommunitySnippetsSection />
     </div>
   );
 }

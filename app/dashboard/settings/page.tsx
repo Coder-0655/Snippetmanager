@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ModernCard } from "@/components/ui/modern-card";
 import { Badge } from "@/components/ui/badge";
+import { SubscriptionManager } from "@/components/subscription-manager";
 import { 
   Settings,
   Palette,
@@ -17,13 +18,14 @@ import {
   Monitor,
   Check,
   Info,
-  RefreshCw
+  RefreshCw,
+  CreditCard
 } from "lucide-react";
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const { user } = useUser();
-  const [activeTab, setActiveTab] = useState<'appearance' | 'data'>('appearance');
+  const [activeTab, setActiveTab] = useState<'subscription' | 'appearance' | 'data'>('subscription');
   const [saved, setSaved] = useState(false);
 
   const saveSettings = () => {
@@ -72,6 +74,14 @@ export default function SettingsPage() {
           <ModernCard variant="elevated">
             <div className="space-y-1 p-2">
               <Button
+                variant={activeTab === 'subscription' ? "default" : "ghost"}
+                className="w-full justify-start"
+                onClick={() => setActiveTab('subscription')}
+              >
+                <CreditCard className="h-4 w-4 mr-2" />
+                Subscription
+              </Button>
+              <Button
                 variant={activeTab === 'appearance' ? "default" : "ghost"}
                 className="w-full justify-start"
                 onClick={() => setActiveTab('appearance')}
@@ -94,6 +104,18 @@ export default function SettingsPage() {
         <div className="lg:col-span-3">
           <ModernCard variant="elevated">
             <div className="p-6">
+              {activeTab === 'subscription' && (
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-lg font-medium mb-2">Subscription & Billing</h3>
+                    <p className="text-muted-foreground text-sm">
+                      Manage your subscription plan and view usage limits
+                    </p>
+                  </div>
+                  <SubscriptionManager />
+                </div>
+              )}
+
               {activeTab === 'appearance' && (
                 <div className="space-y-6">
                   <h2 className="text-lg font-semibold">Appearance</h2>

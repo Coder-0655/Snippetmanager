@@ -95,6 +95,7 @@ export type Database = {
           language: string;
           tags: string[];
           project_id: string | null;
+          is_public: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -106,6 +107,7 @@ export type Database = {
           language: string;
           tags?: string[];
           project_id?: string | null;
+          is_public?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -117,8 +119,76 @@ export type Database = {
           language?: string;
           tags?: string[];
           project_id?: string | null;
+          is_public?: boolean;
           created_at?: string;
           updated_at?: string;
+        };
+      };
+      community: {
+        Row: {
+          id: string;
+          snippet_id: string;
+          user_id: string;
+          title: string;
+          code: string;
+          language: string;
+          tags: string[];
+          description: string | null;
+          project_id: string | null;
+          likes_count: number;
+          views_count: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          snippet_id: string;
+          user_id: string;
+          title: string;
+          code: string;
+          language: string;
+          tags?: string[];
+          description?: string | null;
+          project_id?: string | null;
+          likes_count?: number;
+          views_count?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          snippet_id?: string;
+          user_id?: string;
+          title?: string;
+          code?: string;
+          language?: string;
+          tags?: string[];
+          description?: string | null;
+          project_id?: string | null;
+          likes_count?: number;
+          views_count?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      community_likes: {
+        Row: {
+          id: string;
+          community_id: string;
+          user_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          community_id: string;
+          user_id: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          community_id?: string;
+          user_id?: string;
+          created_at?: string;
         };
       };
       tags: {
@@ -144,3 +214,11 @@ export type Database = {
 
 export type Snippet = Database["public"]["Tables"]["snippets"]["Row"];
 export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
+export type CommunitySnippet = Database["public"]["Tables"]["community"]["Row"];
+export type CommunityLike = Database["public"]["Tables"]["community_likes"]["Row"];
+
+export type CommunitySnippetWithProfile = CommunitySnippet & {
+  author_name?: string;
+  author_avatar?: string;
+  user_liked?: boolean;
+};

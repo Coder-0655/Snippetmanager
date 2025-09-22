@@ -103,7 +103,7 @@ export function MonacoEditor({
   return (
     <Card className={`overflow-hidden ${className}`}>
       {showLanguageSelector && (
-        <div className="flex items-center justify-between p-3 border-b bg-muted/30">
+        <div className="flex items-center justify-between p-3 border-b bg-muted/50">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium">Language:</span>
             <select
@@ -160,7 +160,7 @@ export function MonacoEditor({
       </div>
       
       {!readOnly && (
-        <div className="flex items-center justify-between p-3 border-t bg-muted/30 text-xs text-muted-foreground">
+        <div className="flex items-center justify-between p-3 border-t bg-muted/50 text-xs text-muted-foreground">
           <span>Press Ctrl/Cmd + S to save</span>
           <span>Monaco Editor</span>
         </div>

@@ -115,6 +115,10 @@ export default function ProjectsPage() {
       console.error('Failed to save project:', error);
       if (error.message && error.message.includes('table')) {
         setError('Database tables not found. Please run the setup script in your Supabase dashboard.');
+      } else if (error.message && error.message.includes('subscription limits')) {
+        setError(error.message);
+      } else if (error.message && error.message.includes('maximum')) {
+        setError(error.message);
       } else {
         setError('Failed to save project. Please try again.');
       }

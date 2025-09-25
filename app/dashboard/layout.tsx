@@ -32,7 +32,7 @@ function Sidebar({ className, onNavigate }: { className?: string; onNavigate?: (
     { name: 'Dashboard', href: '/dashboard', icon: Home },
     { name: 'Projects', href: '/dashboard/projects', icon: FolderOpen },
     { name: 'Snippets', href: '/dashboard/snippets', icon: Code2 },
-    { name: 'Community', href: '/community', icon: Globe },
+    { name: 'Community', href: '/dashboard/community', icon: Globe },
     { name: 'Tags', href: '/dashboard/tags', icon: Tags },
     { name: 'Settings', href: '/dashboard/settings', icon: Settings },
   ];

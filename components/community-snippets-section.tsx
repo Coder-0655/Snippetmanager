@@ -67,7 +67,7 @@ export function CommunitySnippetsSection() {
           <p className="text-muted-foreground">Discover and learn from the community</p>
         </div>
         <Button asChild variant="outline">
-          <Link href="/community" className="flex items-center gap-2">
+          <Link href="/dashboard/community" className="flex items-center gap-2">
             View All
             <ArrowRight className="h-4 w-4" />
           </Link>
@@ -156,7 +156,7 @@ export function CommunitySnippetsSection() {
       {snippets.length >= 6 && (
         <div className="text-center">
           <Button asChild>
-            <Link href="/community">
+            <Link href="/dashboard/community">
               Explore More Community Snippets
             </Link>
           </Button>

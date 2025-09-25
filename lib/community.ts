@@ -29,7 +29,7 @@ class CommunityService {
 
       if (isPublic) {
         // Add to community table
-        return await this.addToyCommunity(snippetId);
+        return await this.addToCommunity(snippetId);
       } else {
         // Remove from community table
         return await this.removeFromCommunity(snippetId);
@@ -41,7 +41,7 @@ class CommunityService {
   }
 
   // Add snippet to community
-  private async addToyCommunity(snippetId: string): Promise<boolean> {
+  private async addToCommunity(snippetId: string): Promise<boolean> {
     try {
       // Get the snippet data
       const { data: snippet, error: snippetError } = await this.supabase

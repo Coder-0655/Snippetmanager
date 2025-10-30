@@ -4,7 +4,6 @@ import { useUser, useAuth } from "@clerk/nextjs";
 import { createSupabaseClient } from "./supabase";
 import { localStorageService } from "./local-storage";
 import { initializeDefaultTags } from "./snippets";
-import { initializeUserSubscription } from "./subscription";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -73,9 +72,6 @@ export function useUserSync() {
 
         // Initialize default tags for new user
         await initializeDefaultTags(user.id);
-        
-        // Initialize user subscription (free plan)
-        await initializeUserSubscription(user.id);
 
         console.log('User created in Supabase:', userData);
       } else {

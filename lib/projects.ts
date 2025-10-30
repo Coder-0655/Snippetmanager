@@ -1,6 +1,5 @@
 import { createSupabaseClient } from './supabase';
 import { Database } from './supabase';
-import { canCreateProject } from './subscription';
 
 type Project = Database['public']['Tables']['projects']['Row'];
 type ProjectInsert = Database['public']['Tables']['projects']['Insert'];
@@ -27,12 +26,6 @@ export async function createProject(
   userId: string,
   project: Omit<ProjectInsert, 'user_id'>
 ): Promise<Project | null> {
-  // Check subscription limits before creating project
-  const canCreate = await canCreateProject(userId);
-  if (!canCreate.allowed) {
-    throw new Error(canCreate.reason || 'Cannot create project due to subscription limits');
-  }
-
   const supabase = createSupabaseClient();
   
   try {

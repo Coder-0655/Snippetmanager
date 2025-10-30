@@ -1,42 +1,20 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { useUser } from '@clerk/nextjs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
-import { Crown, Globe, Lock, Image, Video } from 'lucide-react'
+import { Globe, Lock, Image, Video } from 'lucide-react'
 import { MediaUpload } from '@/components/media-upload'
-import { canCreatePrivateSnippets } from '@/lib/subscription'
 
 export default function FeatureDemoPage() {
   const { user } = useUser()
-  const [canCreatePrivate, setCanCreatePrivate] = useState(false)
   const [isPublic, setIsPublic] = useState(true)
   const [media, setMedia] = useState<{url: string, type: 'image' | 'video', name: string}[]>([])
 
-  useEffect(() => {
-    const checkSubscription = async () => {
-      if (!user) return
-      try {
-        const canCreate = await canCreatePrivateSnippets(user.id)
-        setCanCreatePrivate(canCreate)
-        if (!canCreate) {
-          setIsPublic(true) // Force public for FREE users
-        }
-      } catch (error) {
-        console.error('Error checking subscription:', error)
-      }
-    }
-    checkSubscription()
-  }, [user])
-
   const handleTogglePrivacy = (checked: boolean) => {
-    if (!checked && !canCreatePrivate) {
-      alert("🔒 Private snippets are only available for PRO users!\n\nUpgrade your plan to:\n✅ Create private snippets\n✅ Keep your code secure\n✅ Control who sees your snippets")
-      return
-    }
     setIsPublic(checked)
   }
 
@@ -45,17 +23,17 @@ export default function FeatureDemoPage() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">New Features Demo</h1>
         <p className="text-muted-foreground">
-          Testing private snippet restrictions and media uploads
+          Testing snippet visibility and media uploads
         </p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        {/* Subscription Feature Demo */}
+        {/* Snippet Visibility Demo */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Crown className="h-5 w-5 text-amber-500" />
-              Private Snippet Access
+              <Globe className="h-5 w-5 text-green-500" />
+              Snippet Visibility
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -66,7 +44,7 @@ export default function FeatureDemoPage() {
                   <p className="text-sm text-muted-foreground">
                     {isPublic 
                       ? "Snippet will be public in community" 
-                      : "Snippet will be private (PRO only)"
+                      : "Snippet will be private"
                     }
                   </p>
                 </div>
@@ -99,27 +77,10 @@ export default function FeatureDemoPage() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Subscription Status:</span>
-                <Badge variant={canCreatePrivate ? "default" : "secondary"}>
-                  {canCreatePrivate ? "PRO" : "FREE"}
-                </Badge>
-              </div>
-              
-              {!canCreatePrivate && (
-                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                  <div className="flex items-center gap-2 text-amber-800">
-                    <Crown className="h-4 w-4" />
-                    <span className="text-sm font-medium">
-                      Upgrade to PRO for private snippets
-                    </span>
-                  </div>
-                  <p className="text-xs text-amber-600 mt-1">
-                    FREE users can only create public snippets
-                  </p>
-                </div>
-              )}
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-800">
+                Control who can see your snippets by toggling between public and private visibility.
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -179,13 +140,13 @@ export default function FeatureDemoPage() {
         <CardContent className="space-y-3">
           <div className="grid gap-3 md:grid-cols-2">
             <div className="flex items-center gap-3">
-              <div className="flex-shrink-0 w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
-                <Crown className="h-4 w-4 text-amber-600" />
+              <div className="flex-shrink-0 w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                <Globe className="h-4 w-4 text-green-600" />
               </div>
               <div>
-                <h3 className="font-medium">Private Snippets (PRO)</h3>
+                <h3 className="font-medium">Snippet Visibility</h3>
                 <p className="text-sm text-muted-foreground">
-                  FREE users can only create public snippets
+                  Toggle between public and private
                 </p>
               </div>
             </div>
@@ -205,7 +166,7 @@ export default function FeatureDemoPage() {
           
           <div className="pt-3 border-t">
             <p className="text-sm text-muted-foreground">
-              <strong>Try it:</strong> Toggle the privacy switch above to see the subscription restriction in action!
+              <strong>Try it:</strong> Toggle the privacy switch above to control snippet visibility!
             </p>
           </div>
         </CardContent>

@@ -21,10 +21,9 @@ import {
 } from "@/components/ui/select";
 import { CodeEditor, type CodeLanguage } from "@/components/code-editor";
 import { MonacoEditor } from "@/components/monaco-editor";
-import { Plus, Upload, Crown } from "lucide-react";
+import { Plus, Upload } from "lucide-react";
 import { getSnippets, createSnippet, updateSnippet, deleteSnippet, type UnifiedSnippet } from "@/lib/snippets";
 import { getProjects } from "@/lib/projects";
-import { canCreatePrivateSnippets } from "@/lib/subscription";
 import { toggleSnippetPublic } from "@/lib/community";
 import type { Snippet } from "@/lib/supabase";
 import { Database } from "@/lib/supabase";
@@ -62,7 +61,6 @@ export default function MySnippetsPage() {
   const [tags, setTags] = useState<string>("");
   const [projectId, setProjectId] = useState<string>("none");
   const [isPublic, setIsPublic] = useState(true);
-  const [canCreatePrivate, setCanCreatePrivate] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string>("");
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
@@ -97,24 +95,6 @@ export default function MySnippetsPage() {
       }
     };
     loadProjects();
-  }, [user]);
-
-  // Check subscription permissions
-  useEffect(() => {
-    const checkPrivateSnippetPermission = async () => {
-      if (!user) return;
-      try {
-        const canCreate = await canCreatePrivateSnippets(user.id);
-        setCanCreatePrivate(canCreate);
-        // If user can't create private snippets, force public
-        if (!canCreate) {
-          setIsPublic(true);
-        }
-      } catch (error) {
-        console.error('Error checking subscription:', error);
-      }
-    };
-    checkPrivateSnippetPermission();
   }, [user]);
 
   // Filter and sort snippets based on search filters
@@ -300,13 +280,7 @@ export default function MySnippetsPage() {
       setOpen(false);
     } catch (error: any) {
       console.error("Failed to save snippet:", error);
-      if (error.message && error.message.includes('subscription limits')) {
-        setError(error.message);
-      } else if (error.message && error.message.includes('maximum')) {
-        setError(error.message);
-      } else {
-        setError('Failed to save snippet. Please try again.');
-      }
+      setError('Failed to save snippet. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -314,12 +288,6 @@ export default function MySnippetsPage() {
 
   const handleTogglePublic = async (snippetId: string, newIsPublic: boolean) => {
     if (!user) return;
-
-    // Check if user is trying to make snippet private without permission
-    if (!newIsPublic && !canCreatePrivate) {
-      alert("Private snippets are only available for PRO users. Please upgrade your plan to make snippets private.");
-      return;
-    }
 
     try {
       const success = await toggleSnippetPublic(snippetId, newIsPublic);
@@ -633,9 +601,7 @@ export default function MySnippetsPage() {
                       <p className="text-xs text-muted-foreground">
                         {isPublic 
                           ? "This snippet will be visible in the community hub" 
-                          : canCreatePrivate 
-                            ? "This snippet will be private and only visible to you"
-                            : "Private snippets require a PRO subscription"
+                          : "This snippet will be private and only visible to you"
                         }
                       </p>
                     </div>
@@ -645,26 +611,13 @@ export default function MySnippetsPage() {
                       </span>
                       <Switch
                         checked={isPublic}
-                        onCheckedChange={(checked) => {
-                          if (!checked && !canCreatePrivate) {
-                            alert("Private snippets are only available for PRO users. Please upgrade your plan.");
-                            return;
-                          }
-                          setIsPublic(checked);
-                        }}
+                        onCheckedChange={setIsPublic}
                       />
                       <span className={`text-sm ${isPublic ? 'font-medium' : 'text-muted-foreground'}`}>
                         Public
                       </span>
                     </div>
                   </div>
-                  
-                  {!canCreatePrivate && (
-                    <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-50 p-2 rounded">
-                      <Crown className="h-3 w-3" />
-                      <span>Upgrade to PRO to create private snippets</span>
-                    </div>
-                  )}
                 </div>
 
                 {error && (

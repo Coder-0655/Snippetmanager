@@ -3,7 +3,6 @@
 import { createSupabaseClient, isSupabaseConfigured } from "./supabase";
 import { localStorageService, type LocalSnippet } from "./local-storage";
 import { getCurrentUserId } from "./clerk-auth";
-import { canCreateSnippet } from "./subscription";
 import type { Snippet } from "./supabase";
 
 // Default tags that are created for every new user
@@ -66,12 +65,6 @@ class SnippetsService {
         throw new Error("User not authenticated");
       }
 
-      // Check subscription limits for local mode
-      const canCreate = await canCreateSnippet(currentUserId, snippet.project_id || undefined);
-      if (!canCreate.allowed) {
-        throw new Error(canCreate.reason || 'Cannot create snippet due to subscription limits');
-      }
-
       return localStorageService.addSnippet({
         ...snippet,
         user_id: currentUserId,
@@ -91,12 +84,6 @@ class SnippetsService {
           throw new Error("User not authenticated");
         }
         userIdToUse = user.id;
-      }
-
-      // Check subscription limits before creating snippet
-      const canCreate = await canCreateSnippet(userIdToUse, snippet.project_id || undefined);
-      if (!canCreate.allowed) {
-        throw new Error(canCreate.reason || 'Cannot create snippet due to subscription limits');
       }
 
       const { data, error } = await supabase

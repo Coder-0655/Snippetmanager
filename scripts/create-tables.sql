@@ -2,7 +2,7 @@
 -- MANUAL SQL SCRIPT FOR SUPABASE DASHBOARD
 -- ============================================
 -- Run this SQL in your Supabase Dashboard under SQL Editor
--- This will create the missing projects, tags, and subscription tables
+-- This will create the missing projects and tags tables
 
 -- 1. Create projects table
 CREATE TABLE IF NOT EXISTS projects (
@@ -20,38 +20,17 @@ CREATE INDEX IF NOT EXISTS idx_projects_user_id ON projects(user_id);
 CREATE INDEX IF NOT EXISTS idx_projects_created_at ON projects(created_at);
 CREATE INDEX IF NOT EXISTS idx_projects_user_id_created_at ON projects(user_id, created_at);
 
--- 3. Create user_subscriptions table for Stripe integration
-CREATE TABLE IF NOT EXISTS user_subscriptions (
-    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-    user_id text NOT NULL UNIQUE,
-    stripe_customer_id text,
-    stripe_subscription_id text,
-    plan_type text NOT NULL DEFAULT 'FREE' CHECK (plan_type IN ('FREE', 'PRO')),
-    status text NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'canceled', 'past_due', 'unpaid', 'incomplete')),
-    current_period_start timestamp with time zone,
-    current_period_end timestamp with time zone,
-    cancel_at_period_end boolean DEFAULT false,
-    created_at timestamp with time zone DEFAULT NOW(),
-    updated_at timestamp with time zone DEFAULT NOW()
-);
-
--- 4. Create indexes for user_subscriptions table
-CREATE INDEX IF NOT EXISTS idx_user_subscriptions_user_id ON user_subscriptions(user_id);
-CREATE INDEX IF NOT EXISTS idx_user_subscriptions_stripe_customer_id ON user_subscriptions(stripe_customer_id);
-CREATE INDEX IF NOT EXISTS idx_user_subscriptions_stripe_subscription_id ON user_subscriptions(stripe_subscription_id);
-CREATE INDEX IF NOT EXISTS idx_user_subscriptions_plan_type ON user_subscriptions(plan_type);
-
--- 5. Create tags table
+-- 3. Create tags table
 CREATE TABLE IF NOT EXISTS tags (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
     name text NOT NULL UNIQUE,
     created_at timestamp with time zone DEFAULT NOW()
 );
 
--- 6. Create index for tags table
+-- 4. Create index for tags table
 CREATE INDEX IF NOT EXISTS idx_tags_name ON tags(name);
 
--- 7. Insert default tags
+-- 5. Insert default tags
 INSERT INTO tags (name) VALUES 
     ('javascript'),
     ('typescript'),
@@ -80,7 +59,7 @@ INSERT INTO tags (name) VALUES
     ('example')
 ON CONFLICT (name) DO NOTHING;
 
--- 8. Add project_id column to snippets table if it doesn't exist
+-- 6. Add project_id column to snippets table if it doesn't exist
 DO $$
 BEGIN
     -- Check if project_id column exists
@@ -97,7 +76,7 @@ BEGIN
 END
 $$;
 
--- 9. Add foreign key constraint to snippets table for project_id (if not exists)
+-- 7. Add foreign key constraint to snippets table for project_id (if not exists)
 DO $$
 BEGIN
     -- Check if the foreign key constraint already exists
@@ -120,7 +99,7 @@ $$;
 -- 8. Add index for snippets project_id
 CREATE INDEX IF NOT EXISTS idx_snippets_project_id ON snippets(project_id);
 
--- 10. Add is_public column to snippets table for community sharing
+-- 9. Add is_public column to snippets table for community sharing
 DO $$
 BEGIN
     -- Check if is_public column exists
@@ -137,7 +116,7 @@ BEGIN
 END
 $$;
 
--- 11. Create community table for public snippets
+-- 10. Create community table for public snippets
 CREATE TABLE IF NOT EXISTS community (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
     snippet_id uuid NOT NULL,
@@ -170,7 +149,7 @@ CREATE TABLE IF NOT EXISTS community (
         UNIQUE (snippet_id, user_id)
 );
 
--- 12. Create indexes for community table
+-- 11. Create indexes for community table
 CREATE INDEX IF NOT EXISTS idx_community_user_id ON community(user_id);
 CREATE INDEX IF NOT EXISTS idx_community_snippet_id ON community(snippet_id);
 CREATE INDEX IF NOT EXISTS idx_community_created_at ON community(created_at DESC);
@@ -179,7 +158,7 @@ CREATE INDEX IF NOT EXISTS idx_community_views_count ON community(views_count DE
 CREATE INDEX IF NOT EXISTS idx_community_language ON community(language);
 CREATE INDEX IF NOT EXISTS idx_community_tags ON community USING GIN(tags);
 
--- 13. Create community_likes table for tracking user likes
+-- 12. Create community_likes table for tracking user likes
 CREATE TABLE IF NOT EXISTS community_likes (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
     community_id uuid NOT NULL,
@@ -197,14 +176,14 @@ CREATE TABLE IF NOT EXISTS community_likes (
         UNIQUE (community_id, user_id)
 );
 
--- 14. Create indexes for community_likes table
+-- 13. Create indexes for community_likes table
 CREATE INDEX IF NOT EXISTS idx_community_likes_community_id ON community_likes(community_id);
 CREATE INDEX IF NOT EXISTS idx_community_likes_user_id ON community_likes(user_id);
 
--- 15. Add index for snippets is_public column
+-- 14. Add index for snippets is_public column
 CREATE INDEX IF NOT EXISTS idx_snippets_is_public ON snippets(is_public);
 
--- 16. Add media fields to snippets table for images and videos
+-- 15. Add media fields to snippets table for images and videos
 DO $$
 BEGIN
     -- Check if media_urls column exists
@@ -233,7 +212,7 @@ BEGIN
 END
 $$;
 
--- 17. Add indexes for media fields
+-- 16. Add indexes for media fields
 CREATE INDEX IF NOT EXISTS idx_snippets_media_urls ON snippets USING gin(media_urls);
 CREATE INDEX IF NOT EXISTS idx_snippets_media_types ON snippets USING gin(media_types);
 
@@ -241,7 +220,7 @@ CREATE INDEX IF NOT EXISTS idx_snippets_media_types ON snippets USING gin(media_
 -- END OF MANUAL SQL SCRIPT
 -- ============================================
 
--- 16. Verify table creation (optional - run separately to check)
+-- 17. Verify table creation (optional - run separately to check)
 -- SELECT 'projects' as table_name, count(*) as row_count FROM projects
 -- UNION ALL
 -- SELECT 'tags' as table_name, count(*) as row_count FROM tags

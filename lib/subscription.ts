@@ -12,7 +12,6 @@ export const SUBSCRIPTION_PLANS = {
       'Up to 50 snippets per project',
       'Public snippets only',
       'Basic code editor',
-      'Community access',
       'Tags and organization',
     ],
   },

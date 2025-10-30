@@ -25,7 +25,6 @@ import { Plus, Upload, Crown } from "lucide-react";
 import { getSnippets, createSnippet, updateSnippet, deleteSnippet, type UnifiedSnippet } from "@/lib/snippets";
 import { getProjects } from "@/lib/projects";
 import { canCreatePrivateSnippets } from "@/lib/subscription";
-import { toggleSnippetPublic } from "@/lib/community";
 import type { Snippet } from "@/lib/supabase";
 import { Database } from "@/lib/supabase";
 import { AdvancedSearch, type SearchFilters } from "@/components/advanced-search";
@@ -313,24 +312,9 @@ export default function MySnippetsPage() {
   };
 
   const handleTogglePublic = async (snippetId: string, newIsPublic: boolean) => {
-    if (!user) return;
-
-    // Check if user is trying to make snippet private without permission
-    if (!newIsPublic && !canCreatePrivate) {
-      alert("Private snippets are only available for PRO users. Please upgrade your plan to make snippets private.");
-      return;
-    }
-
-    try {
-      const success = await toggleSnippetPublic(snippetId, newIsPublic);
-      if (success) {
-        // Refresh snippets to get updated data
-        loadSnippets();
-      }
-    } catch (error) {
-      console.error('Error toggling snippet privacy:', error);
-      alert('Failed to update snippet privacy. Please try again.');
-    }
+    // Community feature has been removed
+    // All snippets are now private by default
+    alert('Community feature has been removed. All snippets are private.');
   };
 
   const handleEdit = (snippet: Snippet) => {
@@ -633,7 +617,7 @@ export default function MySnippetsPage() {
                       </label>
                       <p className="text-xs text-muted-foreground">
                         {isPublic 
-                          ? "This snippet will be visible in the community hub" 
+                          ? "This snippet is marked as public" 
                           : canCreatePrivate 
                             ? "This snippet will be private and only visible to you"
                             : "Private snippets require a PRO subscription"

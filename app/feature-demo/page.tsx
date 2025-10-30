@@ -65,7 +65,7 @@ export default function FeatureDemoPage() {
                   <h3 className="font-medium">Snippet Visibility</h3>
                   <p className="text-sm text-muted-foreground">
                     {isPublic 
-                      ? "Snippet will be public in community" 
+                      ? "Snippet is marked as public" 
                       : "Snippet will be private (PRO only)"
                     }
                   </p>
@@ -88,7 +88,7 @@ export default function FeatureDemoPage() {
                 {isPublic ? (
                   <>
                     <Globe className="h-4 w-4 text-green-500" />
-                    <span className="text-green-600">Public - Visible in community</span>
+                    <span className="text-green-600">Public</span>
                   </>
                 ) : (
                   <>

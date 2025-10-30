@@ -29,9 +29,6 @@
 - ⭐ **Favorites** - Mark important snippets as favorites for quick access
 
 ### Advanced Features
-- 🌐 **Community Sharing** - Share snippets publicly and discover code from other developers
-- 👥 **Collaboration** - Share snippets privately with team members
-- 🔒 **Privacy Control** - Toggle snippets between public and private (PRO feature)
 - 💾 **Data Export/Import** - Export and import your snippets in JSON format
 - 📱 **Responsive Design** - Works seamlessly on desktop, tablet, and mobile
 - 🌗 **Dark/Light Mode** - Automatic theme detection with manual toggle
@@ -174,18 +171,6 @@ Just run `npm run dev` and start using it. All your data is stored locally in yo
    - Add tags for organization
    - Click "Save"
 
-### Using the Community Feature
-
-1. **Make Snippet Public**:
-   - Find your snippet
-   - Click the lock icon 🔒 to toggle to public 🌐
-   - Snippet appears in the community feed
-
-2. **Browse Community**:
-   - Navigate to "Community" in the sidebar
-   - Search and filter public snippets
-   - Like and view snippets from other developers
-
 ### Keyboard Shortcuts
 
 | Shortcut | Action |
@@ -205,7 +190,6 @@ snippet-manager/
 ├── app/                          # Next.js app router
 │   ├── api/                      # API routes
 │   ├── dashboard/                # Main application pages
-│   │   ├── community/            # Community feed
 │   │   ├── projects/             # Project management
 │   │   ├── settings/             # User settings
 │   │   ├── snippets/             # Snippet management
@@ -219,7 +203,6 @@ snippet-manager/
 │   ├── monaco-editor.tsx         # Monaco editor wrapper
 │   └── ...                       # Other components
 ├── lib/                          # Utility functions and services
-│   ├── community.ts              # Community features
 │   ├── local-storage.ts          # Local storage service
 │   ├── snippets.ts               # Snippet operations
 │   ├── subscription.ts           # Plan management
@@ -373,20 +356,17 @@ npm run build
 ### FREE Plan
 - ✅ Up to 3 projects
 - ✅ Up to 50 snippets per project
-- ✅ Public snippets only
 - ✅ Basic code editor
-- ✅ Community access
 - ✅ Tags and organization
+- ✅ Export/Import data
 
 ### PRO Plan
 - ✅ Unlimited projects
 - ✅ Unlimited snippets
-- ✅ Private snippets
 - ✅ Advanced Monaco editor
 - ✅ AI-powered suggestions
 - ✅ Priority support
-- ✅ Export/Import data
-- ✅ Collaboration features
+- ✅ Full feature access
 
 *Note: This is an open-source project. The PRO plan is configurable and can be managed without payment processing.*
 
@@ -428,12 +408,6 @@ Contributions are welcome! Please follow these steps:
 **Problem**: Monaco Editor errors when closing dialogs
 **Solution**: The editor properly cleans up on unmount. Errors are logged but don't affect functionality.
 
-**Problem**: Snippets not appearing in community
-**Solution**: 
-1. Ensure snippet is toggled to public (🌐 icon)
-2. Check database sync with `/dashboard/test-community`
-3. Verify `is_public` column exists in database
-
 **Problem**: Authentication issues
 **Solution**: 
 1. Verify Clerk keys in `.env.local`
@@ -451,10 +425,8 @@ Contributions are welcome! Please follow these steps:
 ## 📚 Documentation
 
 ### Key Files
-- `COMMUNITY_TESTING.md` - Guide for testing community features
-- `COMMUNITY_IMPLEMENTATION.md` - Technical documentation
-- `MONACO_EDITOR_FIX.md` - Monaco editor implementation details
-- `VERIFICATION_CHECKLIST.md` - Testing checklist
+- `COMMUNITY_REMOVAL.md` - Documentation of community feature removal
+- `LOCAL_MODE.md` - Guide for using the app without configuration
 
 ### API Reference
 
@@ -474,15 +446,18 @@ const newSnippet = await createSnippet({
 }, userId);
 ```
 
-#### Community Operations
+#### Project Operations
 ```typescript
-import { toggleSnippetPublic, getCommunitySnippets } from '@/lib/community';
+import { getProjects, createProject } from '@/lib/projects';
 
-// Make snippet public
-await toggleSnippetPublic(snippetId, true);
+// Get all projects
+const projects = await getProjects(userId);
 
-// Get community snippets
-const publicSnippets = await getCommunitySnippets(50, 0);
+// Create project
+const newProject = await createProject({
+  name: 'My Project',
+  color: '#3b82f6',
+}, userId);
 ```
 
 ---

@@ -25,7 +25,7 @@ import {
 import { MonacoEditor } from "@/components/monaco-editor";
 import type { Snippet } from "@/lib/supabase";
 
-interface SharedSnippet extends Snippet {
+interface SharedSnippet extends Omit<Snippet, 'is_public'> {
   share_id?: string;
   is_public?: boolean;
   share_url?: string;

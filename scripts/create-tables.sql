@@ -237,6 +237,20 @@ $$;
 CREATE INDEX IF NOT EXISTS idx_snippets_media_urls ON snippets USING gin(media_urls);
 CREATE INDEX IF NOT EXISTS idx_snippets_media_types ON snippets USING gin(media_types);
 
+-- 18. Create profiles table for user information
+CREATE TABLE IF NOT EXISTS profiles (
+    id text PRIMARY KEY,
+    email text,
+    full_name text,
+    avatar_url text,
+    created_at timestamp with time zone DEFAULT NOW(),
+    updated_at timestamp with time zone DEFAULT NOW()
+);
+
+-- 19. Create indexes for profiles table
+CREATE INDEX IF NOT EXISTS idx_profiles_email ON profiles(email);
+CREATE INDEX IF NOT EXISTS idx_profiles_full_name ON profiles(full_name);
+
 -- ============================================
 -- END OF MANUAL SQL SCRIPT
 -- ============================================

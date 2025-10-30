@@ -8,6 +8,7 @@ export interface LocalSnippet {
   tags: string[];
   description?: string;
   project_id: string | null;
+  is_public: boolean;
   created_at: string;
   updated_at: string;
   user_id: string;
@@ -54,6 +55,7 @@ class LocalStorageService {
       ...snippet,
       id: crypto.randomUUID(),
       project_id: snippet.project_id || null,
+      is_public: snippet.is_public ?? false, // Default to false
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };

@@ -129,13 +129,7 @@ class CommunityService {
     try {
       let query = this.supabase
         .from('community')
-        .select(`
-          *,
-          profiles:user_id (
-            full_name,
-            avatar_url
-          )
-        `)
+        .select('*')
         .range(offset, offset + limit - 1)
         .order(sortBy, { ascending: sortOrder === 'asc' });
 
@@ -160,10 +154,11 @@ class CommunityService {
       }
 
       // Transform the data to include author information
+      // For now, we'll use user_id as the author name since profiles table might not be populated
       return (data || []).map(snippet => ({
         ...snippet,
-        author_name: snippet.profiles?.full_name || null,
-        author_avatar: snippet.profiles?.avatar_url || null
+        author_name: snippet.user_id || 'Anonymous',
+        author_avatar: null
       })) as CommunitySnippetWithProfile[];
     } catch (error) {
       console.error('Error fetching community snippets:', error);

@@ -568,6 +568,7 @@ export default function MySnippetsPage() {
                   </SelectContent>
                 </Select>
                 <MonacoEditor
+                  key={`editor-${open}-${editingSnippet?.id || 'new'}`}
                   value={code}
                   onChange={setCode}
                   language={language}

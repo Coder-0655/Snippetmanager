@@ -200,6 +200,7 @@ export function EnhancedSnippetCard({
             <label className="text-sm font-medium text-muted-foreground">Code</label>
             <div className="border border-muted-foreground/20 rounded-xl overflow-hidden">
               <MonacoEditor
+                key={`edit-${snippet.id}-${isEditing}`}
                 value={editData.code}
                 onChange={(value) => setEditData(prev => ({ ...prev, code: value }))}
                 language={editData.language}

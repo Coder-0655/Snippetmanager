@@ -4,7 +4,8 @@ import { useTheme } from "next-themes";
 import { Editor, OnMount } from "@monaco-editor/react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
+import type { editor } from "monaco-editor";
 
 interface MonacoEditorProps {
   value: string;
@@ -57,8 +58,26 @@ export function MonacoEditor({
 }: MonacoEditorProps) {
   const { theme } = useTheme();
   const [editorTheme, setEditorTheme] = useState<string>("vs-dark");
+  const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
+  const [editorKey, setEditorKey] = useState(0);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (editorRef.current) {
+        try {
+          editorRef.current.dispose();
+        } catch (e) {
+          // Ignore disposal errors
+        }
+        editorRef.current = null;
+      }
+    };
+  }, []);
 
   const handleEditorDidMount: OnMount = useCallback((editor, monaco) => {
+    editorRef.current = editor;
+    
     // Set theme based on current theme
     const currentTheme = theme === "dark" ? "vs-dark" : "vs-light";
     setEditorTheme(currentTheme);
@@ -98,6 +117,8 @@ export function MonacoEditor({
     if (onLanguageChange) {
       onLanguageChange(newLanguage);
     }
+    // Force remount editor with new language to avoid model disposal issues
+    setEditorKey(prev => prev + 1);
   };
 
   return (
@@ -126,6 +147,7 @@ export function MonacoEditor({
       
       <div className="relative">
         <Editor
+          key={editorKey}
           height={height}
           defaultLanguage={language}
           language={language}

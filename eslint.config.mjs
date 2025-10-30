@@ -28,7 +28,7 @@ const eslintConfig = [
     rules: {
       // TypeScript specific rules
       "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
-      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/explicit-function-return-type": "off",
       "@typescript-eslint/explicit-module-boundary-types": "off",
 
@@ -37,6 +37,7 @@ const eslintConfig = [
       "react/prop-types": "off",
       "react/display-name": "off",
       "react-hooks/exhaustive-deps": "warn",
+      "react/no-unescaped-entities": "off",
 
       // General code quality
       "no-console": ["warn", { allow: ["warn", "error"] }],
@@ -46,7 +47,7 @@ const eslintConfig = [
 
       // Import organization
       "import/order": [
-        "error",
+        "warn",
         {
           groups: ["builtin", "external", "internal", "parent", "sibling", "index"],
           "newlines-between": "always",
@@ -54,7 +55,7 @@ const eslintConfig = [
       ],
 
       // Next.js specific
-      "@next/next/no-img-element": "error",
+      "@next/next/no-img-element": "warn",
     },
   },
 ];

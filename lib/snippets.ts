@@ -76,6 +76,7 @@ class SnippetsService {
         ...snippet,
         user_id: currentUserId,
         project_id: snippet.project_id || null,
+        is_public: false,
       });
     } else {
       const supabase = createSupabaseClient();

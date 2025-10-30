@@ -20,25 +20,17 @@ CREATE INDEX IF NOT EXISTS idx_projects_user_id ON projects(user_id);
 CREATE INDEX IF NOT EXISTS idx_projects_created_at ON projects(created_at);
 CREATE INDEX IF NOT EXISTS idx_projects_user_id_created_at ON projects(user_id, created_at);
 
--- 3. Create user_subscriptions table for Stripe integration
+-- 3. Create user_subscriptions table for plan management
 CREATE TABLE IF NOT EXISTS user_subscriptions (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id text NOT NULL UNIQUE,
-    stripe_customer_id text,
-    stripe_subscription_id text,
     plan_type text NOT NULL DEFAULT 'FREE' CHECK (plan_type IN ('FREE', 'PRO')),
-    status text NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'canceled', 'past_due', 'unpaid', 'incomplete')),
-    current_period_start timestamp with time zone,
-    current_period_end timestamp with time zone,
-    cancel_at_period_end boolean DEFAULT false,
     created_at timestamp with time zone DEFAULT NOW(),
     updated_at timestamp with time zone DEFAULT NOW()
 );
 
 -- 4. Create indexes for user_subscriptions table
 CREATE INDEX IF NOT EXISTS idx_user_subscriptions_user_id ON user_subscriptions(user_id);
-CREATE INDEX IF NOT EXISTS idx_user_subscriptions_stripe_customer_id ON user_subscriptions(stripe_customer_id);
-CREATE INDEX IF NOT EXISTS idx_user_subscriptions_stripe_subscription_id ON user_subscriptions(stripe_subscription_id);
 CREATE INDEX IF NOT EXISTS idx_user_subscriptions_plan_type ON user_subscriptions(plan_type);
 
 -- 5. Create tags table

@@ -14,9 +14,9 @@ import {
   TrendingUp,
   Folder,
   Code2,
-  Zap
+  Info
 } from 'lucide-react';
-import { SUBSCRIPTION_PLANS, getStripe } from '@/lib/stripe';
+import { SUBSCRIPTION_PLANS } from '@/lib/subscription';
 
 interface SubscriptionInfo {
   subscription: any;
@@ -33,7 +33,6 @@ export function SubscriptionManager() {
   const { user } = useUser();
   const [subscriptionInfo, setSubscriptionInfo] = useState<SubscriptionInfo | null>(null);
   const [loading, setLoading] = useState(true);
-  const [upgrading, setUpgrading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Load subscription info
@@ -46,7 +45,7 @@ export function SubscriptionManager() {
   const loadSubscriptionInfo = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/stripe/subscription');
+      const response = await fetch('/api/subscription');
       
       if (!response.ok) {
         throw new Error('Failed to load subscription info');
@@ -59,40 +58,6 @@ export function SubscriptionManager() {
       setError('Failed to load subscription information');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleUpgrade = async () => {
-    try {
-      setUpgrading(true);
-      setError(null);
-
-      const response = await fetch('/api/stripe/create-checkout-session', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          priceId: process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to create checkout session');
-      }
-
-      const { url } = await response.json();
-      
-      if (url) {
-        window.location.href = url;
-      } else {
-        throw new Error('No checkout URL received');
-      }
-    } catch (error) {
-      console.error('Error upgrading subscription:', error);
-      setError('Failed to start upgrade process. Please try again.');
-    } finally {
-      setUpgrading(false);
     }
   };
 
@@ -220,16 +185,16 @@ export function SubscriptionManager() {
         </CardContent>
       </Card>
 
-      {/* Upgrade to Pro */}
+      {/* Plan Comparison */}
       {!isPro && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Crown className="h-5 w-5 text-yellow-500" />
-              Upgrade to Pro
+              <Info className="h-5 w-5 text-blue-500" />
+              Plan Features
             </CardTitle>
             <CardDescription>
-              Unlock unlimited projects and snippets with advanced features
+              Compare available plans and features
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -248,15 +213,12 @@ export function SubscriptionManager() {
               </div>
 
               {/* Pro Plan */}
-              <div className="border-2 border-primary rounded-lg p-4 relative">
-                <div className="absolute -top-2 left-4">
-                  <Badge className="bg-primary">Popular</Badge>
-                </div>
+              <div className="border-2 border-muted rounded-lg p-4">
                 <h3 className="font-medium mb-2 flex items-center gap-2">
                   <Crown className="h-4 w-4 text-yellow-500" />
-                  Pro Plan - $10/month
+                  Pro Plan
                 </h3>
-                <div className="space-y-2 text-sm text-muted-foreground mb-4">
+                <div className="space-y-2 text-sm text-muted-foreground">
                   {SUBSCRIPTION_PLANS.PRO.features.map((feature, index) => (
                     <div key={index} className="flex items-center gap-2">
                       <Check className="h-3 w-3 text-green-500" />
@@ -264,23 +226,6 @@ export function SubscriptionManager() {
                     </div>
                   ))}
                 </div>
-                <Button 
-                  onClick={handleUpgrade} 
-                  disabled={upgrading}
-                  className="w-full"
-                >
-                  {upgrading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <Zap className="h-4 w-4 mr-2" />
-                      Upgrade Now
-                    </>
-                  )}
-                </Button>
               </div>
             </div>
           </CardContent>

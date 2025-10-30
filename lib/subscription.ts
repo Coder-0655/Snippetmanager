@@ -1,16 +1,84 @@
 import { createSupabaseClient } from './supabase';
-import { SubscriptionPlan, SUBSCRIPTION_PLANS, stripe } from './stripe';
+
+// Subscription plans configuration
+export const SUBSCRIPTION_PLANS = {
+  FREE: {
+    id: 'free',
+    name: 'Free Plan',
+    description: 'Perfect for getting started',
+    price: 0,
+    maxProjects: 3,
+    maxSnippetsPerProject: 10,
+    features: [
+      'Up to 3 projects',
+      '10 snippets per project',
+      'Basic search functionality',
+      'Tag organization',
+    ],
+  },
+  PRO: {
+    id: 'pro',
+    name: 'Pro Plan',
+    description: 'For power users and teams',
+    price: 10, // $10/month (not actively used, for display only)
+    maxProjects: -1, // -1 means unlimited
+    maxSnippetsPerProject: -1, // -1 means unlimited
+    features: [
+      'Unlimited projects',
+      'Unlimited snippets',
+      'Advanced search & filtering',
+      'Export/Import capabilities',
+      'Analytics dashboard',
+      'Priority support',
+    ],
+  },
+} as const;
+
+export type SubscriptionPlan = keyof typeof SUBSCRIPTION_PLANS;
+
+// Helper function to get user's plan limits
+export function getPlanLimits(plan: SubscriptionPlan = 'FREE') {
+  return SUBSCRIPTION_PLANS[plan];
+}
+
+// Helper function to check if usage is within limits
+export function isWithinLimits(
+  currentUsage: { projects: number; snippetsPerProject: Record<string, number> },
+  plan: SubscriptionPlan = 'FREE'
+) {
+  const limits = getPlanLimits(plan);
+  
+  // Check project limit
+  if (limits.maxProjects !== -1 && currentUsage.projects >= limits.maxProjects) {
+    return {
+      valid: false,
+      reason: `Project limit reached. You can create up to ${limits.maxProjects} projects on the ${limits.name}.`,
+      type: 'projects' as const,
+    };
+  }
+  
+  // Check snippets per project limit
+  if (limits.maxSnippetsPerProject !== -1) {
+    for (const [projectId, snippetCount] of Object.entries(currentUsage.snippetsPerProject)) {
+      if (snippetCount >= limits.maxSnippetsPerProject) {
+        return {
+          valid: false,
+          reason: `Snippet limit reached for this project. You can create up to ${limits.maxSnippetsPerProject} snippets per project on the ${limits.name}.`,
+          type: 'snippets' as const,
+          projectId,
+        };
+      }
+    }
+  }
+  
+  return { valid: true };
+}
 
 export interface UserSubscription {
   id: string;
   user_id: string;
-  stripe_customer_id: string | null;
-  stripe_subscription_id: string | null;
   plan_type: SubscriptionPlan;
-  status: 'active' | 'canceled' | 'past_due' | 'unpaid' | 'incomplete';
-  current_period_start: string | null;
-  current_period_end: string | null;
-  cancel_at_period_end: boolean;
+  status: 'active' | 'canceled';
   created_at: string;
   updated_at: string;
 }
@@ -199,164 +267,6 @@ class SubscriptionService {
       status: 'active',
     });
   }
-
-  // Handle Stripe webhook events
-  async handleStripeWebhook(
-    eventType: string,
-    subscriptionId: string,
-    customerId: string,
-    data: any
-  ): Promise<void> {
-    try {
-      switch (eventType) {
-        case 'customer.subscription.link':
-          await this.handleSubscriptionLink(subscriptionId, customerId, data);
-          break;
-        case 'customer.subscription.created':
-        case 'customer.subscription.updated':
-          await this.handleSubscriptionUpdated(subscriptionId, customerId, data);
-          break;
-        case 'customer.subscription.deleted':
-          await this.handleSubscriptionCanceled(subscriptionId);
-          break;
-        case 'invoice.payment_succeeded':
-          await this.handlePaymentSucceeded(subscriptionId);
-          break;
-        case 'invoice.payment_failed':
-          await this.handlePaymentFailed(subscriptionId);
-          break;
-        default:
-          console.log(`Unhandled webhook event: ${eventType}`);
-      }
-    } catch (error) {
-      console.error('Error handling Stripe webhook:', error);
-      throw error;
-    }
-  }
-
-  private async handleSubscriptionLink(
-    subscriptionId: string,
-    customerId: string,
-    data: any
-  ): Promise<void> {
-    const { userId } = data;
-    if (!userId) {
-      console.error('No userId provided for subscription link');
-      return;
-    }
-
-    // Create or update the user subscription with customer ID
-    await this.upsertUserSubscription(userId, {
-      stripe_customer_id: customerId,
-      stripe_subscription_id: subscriptionId,
-    });
-  }
-
-  private async handleSubscriptionUpdated(
-    subscriptionId: string,
-    customerId: string,
-    data: any
-  ): Promise<void> {
-    // First try to find user by customer ID
-    let { data: existingSubscription } = await this.supabase
-      .from('user_subscriptions')
-      .select('user_id')
-      .eq('stripe_customer_id', customerId)
-      .single();
-
-    // If not found by customer ID, try to find by subscription ID
-    if (!existingSubscription) {
-      const { data: subscriptionBySubId } = await this.supabase
-        .from('user_subscriptions')
-        .select('user_id')
-        .eq('stripe_subscription_id', subscriptionId)
-        .single();
-      
-      existingSubscription = subscriptionBySubId;
-    }
-
-    // If still not found, we need to get the user ID from the checkout session metadata
-    if (!existingSubscription) {
-      try {
-        // Get the subscription from Stripe to find the latest invoice
-        if (stripe) {
-          const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-          if (subscription.latest_invoice) {
-            const invoice = await stripe.invoices.retrieve(subscription.latest_invoice as string);
-            // Try to find the user through the invoice or other means
-            // This is a fallback - ideally the customer should already be linked
-            console.log('Invoice details for orphaned subscription:', {
-              subscriptionId,
-              customerId,
-              invoiceId: invoice.id
-            });
-          }
-        }
-      } catch (error) {
-        console.error('Could not retrieve subscription details:', error);
-      }
-      
-      console.error('No user found for customer ID or subscription ID:', { customerId, subscriptionId });
-      return;
-    }
-
-    // Determine plan type from price ID
-    const priceId = data.items?.data?.[0]?.price?.id;
-    const planType = priceId === process.env.STRIPE_PRO_PRICE_ID ? 'PRO' : 'FREE';
-
-    await this.upsertUserSubscription(existingSubscription.user_id, {
-      stripe_subscription_id: subscriptionId,
-      stripe_customer_id: customerId,
-      plan_type: planType,
-      status: data.status,
-      current_period_start: new Date(data.current_period_start * 1000).toISOString(),
-      current_period_end: new Date(data.current_period_end * 1000).toISOString(),
-      cancel_at_period_end: data.cancel_at_period_end,
-    });
-  }
-
-  private async handleSubscriptionCanceled(subscriptionId: string): Promise<void> {
-    const { error } = await this.supabase
-      .from('user_subscriptions')
-      .update({
-        status: 'canceled',
-        plan_type: 'FREE',
-        updated_at: new Date().toISOString(),
-      })
-      .eq('stripe_subscription_id', subscriptionId);
-
-    if (error) {
-      console.error('Error updating canceled subscription:', error);
-    }
-  }
-
-  private async handlePaymentSucceeded(subscriptionId: string): Promise<void> {
-    const { error } = await this.supabase
-      .from('user_subscriptions')
-      .update({
-        status: 'active',
-        updated_at: new Date().toISOString(),
-      })
-      .eq('stripe_subscription_id', subscriptionId);
-
-    if (error) {
-      console.error('Error updating subscription after payment success:', error);
-    }
-  }
-
-  private async handlePaymentFailed(subscriptionId: string): Promise<void> {
-    const { error } = await this.supabase
-      .from('user_subscriptions')
-      .update({
-        status: 'past_due',
-        updated_at: new Date().toISOString(),
-      })
-      .eq('stripe_subscription_id', subscriptionId);
-
-    if (error) {
-      console.error('Error updating subscription after payment failure:', error);
-    }
-  }
 }
 
 // Create singleton instance
@@ -370,7 +280,5 @@ export const getUserUsage = (userId: string) => subscriptionService.getUserUsage
 export const canCreateProject = (userId: string) => subscriptionService.canCreateProject(userId);
 export const canCreateSnippet = (userId: string, projectId?: string) => subscriptionService.canCreateSnippet(userId, projectId);
 export const initializeUserSubscription = (userId: string) => subscriptionService.initializeUserSubscription(userId);
-export const handleStripeWebhook = (eventType: string, subscriptionId: string, customerId: string, data: any) => 
-  subscriptionService.handleStripeWebhook(eventType, subscriptionId, customerId, data);
 
 export default subscriptionService;

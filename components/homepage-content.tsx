@@ -1,13 +1,13 @@
 "use client";
 
-import { useAuth } from "@clerk/nextjs";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ModernButton } from "@/components/ui/modern-button";
+import { useUser } from "@/lib/use-auth";
 
 export function HomePageContent() {
-  const { isSignedIn, isLoaded } = useAuth();
+  const { user, isLoaded, isSignedIn } = useUser();
   const router = useRouter();
 
   useEffect(() => {

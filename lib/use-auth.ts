@@ -23,7 +23,10 @@ export function useUser() {
     user: {
       id: "local-user",
       emailAddresses: [{ emailAddress: "local@user.com" }],
-    },
+      firstName: "Local",
+      lastName: "User",
+      fullName: "Local User",
+    } as any,
     isLoaded: true,
     isSignedIn: true,
   };

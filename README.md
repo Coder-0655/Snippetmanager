@@ -307,16 +307,30 @@ const supportedLanguages = [
 
 ## 🚀 Deployment
 
-### Vercel (Recommended)
+### Quick Deploy to Vercel (No Configuration Required!)
+
+**The easiest deployment option** - works immediately without any setup:
 
 1. Push your code to GitHub
 2. Import project in [Vercel](https://vercel.com)
-3. Add environment variables
-4. Deploy!
+3. **Don't add any environment variables**
+4. Click Deploy!
+
+Your app will work in local storage mode immediately. Users' data will be stored in their browsers.
+
+For detailed deployment instructions and cloud mode setup, see **[VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md)**.
+
+### Vercel with Cloud Features (Optional)
+
+If you want multi-user authentication and cloud sync:
+
+1. Set up Supabase and Clerk accounts
+2. Add environment variables in Vercel
+3. See [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md) for full instructions
 
 ```bash
-npm run build
 # Test production build locally
+npm run build
 npm run start
 ```
 
@@ -326,6 +340,7 @@ The app can be deployed to any platform that supports Next.js:
 - **Netlify**: Follow Next.js deployment guide
 - **AWS**: Use AWS Amplify or EC2
 - **Docker**: Create a Dockerfile for containerization
+- **Self-hosted**: Use Node.js server or PM2
 
 ---
 

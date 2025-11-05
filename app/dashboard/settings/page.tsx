@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTheme } from "next-themes";
-import { useUser } from "@clerk/nextjs";
+import { useUser, getUserId } from "@/lib/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ModernCard } from "@/components/ui/modern-card";

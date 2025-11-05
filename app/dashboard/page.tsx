@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useUser, getUserId } from "@/lib/use-auth";
 import { getSnippets, getAllTagsFromSnippets } from "@/lib/snippets";
 import { ModernCard } from "@/components/ui/modern-card";
 import { Button } from "@/components/ui/button";

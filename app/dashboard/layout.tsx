@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useUser } from "@clerk/nextjs";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { 
@@ -84,20 +83,13 @@ function Sidebar({ className, onNavigate }: { className?: string; onNavigate?: (
 }
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
-  const { user, isLoaded } = useUser();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  if (!isLoaded) {
-    return (
-      <div className="flex items-center justify-center min-h-[calc(100dvh-3.5rem-4rem)]">
-        <div className="text-muted-foreground">Loading...</div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return null; // Middleware will redirect
-  }
+  
+  // Check if we're in local mode (no Clerk) - use environment variable
+  const isLocalMode = !process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+  
+  // In local mode, we'll use a mock user email
+  const userEmail = isLocalMode ? "Local User" : null;
 
   return (
     <div className="flex h-[calc(100dvh-3.5rem-4rem)]">
@@ -153,13 +145,13 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                 <Button variant="outline" size="sm" className="gap-2 shrink-0">
                   <User className="h-4 w-4" />
                   <span className="hidden sm:inline">
-                    {user?.emailAddresses[0]?.emailAddress?.split("@")[0] || "User"}
+                    {userEmail || "User"}
                   </span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuItem className="text-sm text-muted-foreground">
-                  {user?.emailAddresses[0]?.emailAddress}
+                  {isLocalMode ? "Local Storage Mode" : userEmail}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

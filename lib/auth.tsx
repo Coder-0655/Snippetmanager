@@ -36,6 +36,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Supabase mode initialization
       const supabase = createSupabaseClient();
       
+      if (!supabase) {
+        // Fallback to local mode if Supabase fails
+        const localUser = localAuthService.getCurrentUser();
+        setUser(localUser);
+        setSession(null);
+        setLoading(false);
+        return;
+      }
+      
       // Get initial session
       supabase.auth.getSession().then(({ data: { session } }) => {
         setSession(session);
@@ -62,6 +71,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(localUser);
     } else {
       const supabase = createSupabaseClient();
+      if (!supabase) {
+        throw new Error("Supabase not configured");
+      }
       const { error } = await supabase.auth.signUp({
         email,
         password,
@@ -79,6 +91,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(localUser);
     } else {
       const supabase = createSupabaseClient();
+      if (!supabase) {
+        throw new Error("Supabase not configured");
+      }
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -104,6 +119,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
     } else {
       const supabase = createSupabaseClient();
+      if (!supabase) {
+        throw new Error("Supabase not configured");
+      }
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
     }

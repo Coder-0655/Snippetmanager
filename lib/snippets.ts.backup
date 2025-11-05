@@ -31,7 +31,6 @@ class SnippetsService {
       return localStorageService.getSnippets();
     } else {
       const supabase = createSupabaseClient();
-      if (!supabase) return [];
       let query = supabase
         .from("snippets")
         .select("*")
@@ -81,7 +80,6 @@ class SnippetsService {
       });
     } else {
       const supabase = createSupabaseClient();
-      if (!supabase) throw new Error("Supabase not configured");
       
       // Use provided userId or fallback to auth check
       let userIdToUse = userId;
@@ -141,7 +139,6 @@ class SnippetsService {
       return updatedSnippet;
     } else {
       const supabase = createSupabaseClient();
-      if (!supabase) throw new Error("Supabase not configured");
       const { data, error } = await supabase
         .from("snippets")
         .update(updates)
@@ -166,7 +163,6 @@ class SnippetsService {
       }
     } else {
       const supabase = createSupabaseClient();
-      if (!supabase) return ;
       const { error } = await supabase.from("snippets").delete().eq("id", id);
 
       if (error) {
@@ -185,7 +181,6 @@ class SnippetsService {
       }
 
       const supabase = createSupabaseClient();
-      if (!supabase) return [];
       const { data, error } = await supabase
         .from("snippets")
         .select("*")
@@ -248,7 +243,6 @@ class SnippetsService {
       return localStorageService.getSnippetsByTag(tag);
     } else {
       const supabase = createSupabaseClient();
-      if (!supabase) return [];
       const { data, error } = await supabase
         .from("snippets")
         .select("*")
@@ -285,7 +279,6 @@ class SnippetsService {
       }
     } else {
       const supabase = createSupabaseClient();
-      if (!supabase) return ;
       
       // Check if user already has tags
       const { data: existingTags } = await supabase

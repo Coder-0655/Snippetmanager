@@ -23,6 +23,13 @@ export default function DatabaseTestPage() {
     try {
       const supabase = createSupabaseClient();
       
+      if (!supabase) {
+        results.push('⚠️ Supabase not configured - running in local mode');
+        setTestResults(results);
+        setLoading(false);
+        return;
+      }
+      
       // Test 1: Check if we can connect
       results.push('✅ Connected to Supabase');
       

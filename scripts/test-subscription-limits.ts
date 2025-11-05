@@ -68,6 +68,11 @@ async function createTestData() {
   
   const supabase = createSupabaseClient();
   
+  if (!supabase) {
+    console.error('Supabase not configured');
+    return;
+  }
+  
   try {
     // Create test user subscription
     const { error: subError } = await supabase

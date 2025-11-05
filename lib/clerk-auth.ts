@@ -1,7 +1,7 @@
 "use client";
 
-import { useUser, useAuth } from "@clerk/nextjs";
-import { createSupabaseClient } from "./supabase";
+import { useUser } from "@/lib/use-auth";
+import { createSupabaseClient, isSupabaseConfigured } from "./supabase";
 import { localStorageService } from "./local-storage";
 import { initializeDefaultTags } from "./snippets";
 import { initializeUserSubscription } from "./subscription";
@@ -16,12 +16,27 @@ export interface UserProfile {
   updated_at: string;
 }
 
+// Check if Clerk is configured
+const isClerkConfigured = !!(
+  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+);
+
 export function useUserSync() {
-  const { user, isLoaded } = useUser();
-  const { isSignedIn } = useAuth();
+  const { user, isLoaded, isSignedIn } = useUser();
   const [isSetupComplete, setIsSetupComplete] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!isClerkConfigured ? false : true);
   const router = useRouter();
+  
+  // If Clerk is not configured, we're in local mode - no sync needed
+  if (!isClerkConfigured) {
+    return {
+      user: null,
+      isSignedIn: true,
+      isLoaded: true,
+      isSetupComplete: true,
+      isLoading: false,
+    };
+  }
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -39,6 +54,13 @@ export function useUserSync() {
     try {
       setIsLoading(true);
       const supabase = createSupabaseClient();
+      
+      // If Supabase is not configured, skip sync
+      if (!supabase) {
+        setIsSetupComplete(true);
+        setIsLoading(false);
+        return;
+      }
       
       // Check if user already exists in Supabase
       const { data: existingUser, error: fetchError } = await supabase

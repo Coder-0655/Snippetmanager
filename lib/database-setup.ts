@@ -4,6 +4,14 @@ import { createSupabaseClient } from './supabase';
 export async function setupDatabase() {
   const supabase = createSupabaseClient();
   
+  if (!supabase) {
+    console.log('Supabase not configured - skipping database setup');
+    return {
+      success: false,
+      error: 'Supabase not configured'
+    };
+  }
+  
   try {
     console.log('Setting up database tables...');
     
@@ -98,6 +106,11 @@ export async function setupDatabase() {
 // Function to test project creation
 export async function testProjectCreation(userId: string) {
   const supabase = createSupabaseClient();
+  
+  if (!supabase) {
+    console.log('Supabase not configured - cannot create test project');
+    return null;
+  }
   
   try {
     const testProject = {

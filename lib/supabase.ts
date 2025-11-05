@@ -11,7 +11,8 @@ export function isSupabaseConfigured(): boolean {
 
 export function createSupabaseClient() {
   if (!isSupabaseConfigured()) {
-    throw new Error("Supabase environment variables not configured");
+    // Return null instead of throwing - let the calling code handle it
+    return null;
   }
 
   return createBrowserClient(
@@ -23,7 +24,8 @@ export function createSupabaseClient() {
 // Legacy function for compatibility
 export function getSupabaseClient() {
   if (!isSupabaseConfigured()) {
-    throw new Error("Supabase environment variables not configured");
+    // Return null instead of throwing - let the calling code handle it
+    return null;
   }
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;

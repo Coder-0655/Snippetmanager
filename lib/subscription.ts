@@ -47,10 +47,20 @@ export interface UsageStats {
 }
 
 class SubscriptionService {
-  private supabase = createSupabaseClient();
+  private supabase: ReturnType<typeof createSupabaseClient> | null = null;
+
+  private getSupabase() {
+    if (!this.supabase) {
+      this.supabase = createSupabaseClient();
+    }
+    return this.supabase;
+  }
 
   async getUserSubscription(userId: string): Promise<UserSubscription | null> {
-    const { data, error } = await this.supabase
+    const supabase = this.getSupabase();
+    if (!supabase) return null;
+    
+    const { data, error } = await supabase
       .from('user_subscriptions')
       .select('*')
       .eq('user_id', userId)
@@ -68,10 +78,13 @@ class SubscriptionService {
     userId: string,
     planType: SubscriptionPlan = 'FREE'
   ): Promise<UserSubscription | null> {
+    const supabase = this.getSupabase();
+    if (!supabase) return null;
+    
     const existingSubscription = await this.getUserSubscription(userId);
 
     if (existingSubscription) {
-      const { data, error } = await this.supabase
+      const { data, error } = await supabase
         .from('user_subscriptions')
         .update({
           plan_type: planType,
@@ -88,7 +101,7 @@ class SubscriptionService {
 
       return data;
     } else {
-      const { data, error } = await this.supabase
+      const { data, error } = await supabase
         .from('user_subscriptions')
         .insert({
           user_id: userId,
@@ -117,14 +130,23 @@ class SubscriptionService {
   }
 
   async getUserUsage(userId: string): Promise<UsageStats> {
-    const { data: projects } = await this.supabase
+    const supabase = this.getSupabase();
+    if (!supabase) {
+      return {
+        projects: 0,
+        snippetsPerProject: {},
+        totalSnippets: 0,
+      };
+    }
+    
+    const { data: projects } = await supabase
       .from('projects')
       .select('id')
       .eq('user_id', userId);
 
     const projectCount = projects?.length || 0;
 
-    const { data: snippets } = await this.supabase
+    const { data: snippets } = await supabase
       .from('snippets')
       .select('id, project_id')
       .eq('user_id', userId);
